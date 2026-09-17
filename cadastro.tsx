@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/supabase/client";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,7 +75,6 @@ function SignupPage() {
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email: parsed.data.email,
-      // A senha é recebida pelo formulário e nunca fica exposta no código.
       password: parsed.data.password,
       options: {
         emailRedirectTo: `${window.location.origin}/app`,
@@ -94,5 +93,77 @@ function SignupPage() {
     navigate({ to: "/checkout", search: { plano: plan?.code, ciclo: ciclo ?? "mensal" } });
   }
 
-  return (...) 
+  return (
+    <div className="aurora grid-backdrop flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="w-full max-w-lg">
+        <Link to="/" className="mb-8 flex justify-center">
+          <Logo />
+        </Link>
+        <div className="glass-panel rounded-2xl p-6 sm:p-8">
+          <Steps current={2} />
+          <h1 className="mt-5 font-display text-2xl font-bold">Criar sua conta</h1>
+          {plan && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              Plano <span className="font-medium text-brand">{plan.name}</span> ·{" "}
+              {ciclo === "anual" ? "cobrança anual" : "cobrança mensal"}
+            </p>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input id="name" value={form.name} onChange={(e) => update("name", e.target.value)} required maxLength={100} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input id="email" type="email" value={form.email} onChange={(e) => update("email", e.target.value)} required maxLength={255} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input id="whatsapp" inputMode="tel" placeholder="(11) 99999-0000" value={form.whatsapp} onChange={(e) => update("whatsapp", e.target.value)} required maxLength={20} />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input id="password" type="password" value={form.password} onChange={(e) => update("password", e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm">Confirmar senha</Label>
+                <Input id="confirm" type="password" value={form.confirm} onChange={(e) => update("confirm", e.target.value)} required />
+              </div>
+            </div>
+
+            <label className="flex items-start gap-3 text-sm text-muted-foreground">
+              <Checkbox checked={accepted} onCheckedChange={(value) => setAccepted(value === true)} className="mt-0.5" />
+              <span>
+                Li e concordo com os{" "}
+                <Link to="/termos" className="text-brand hover:underline">
+                  Termos de Uso
+                </Link>{" "}
+                e a{" "}
+                <Link to="/privacidade" className="text-brand hover:underline">
+                  Política de Privacidade
+                </Link>
+                .
+              </span>
+            </label>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="size-4 animate-spin" />}
+              Continuar
+            </Button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Já tem conta?{" "}
+            <Link to="/login" className="font-medium text-brand hover:underline">
+              Entrar
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }

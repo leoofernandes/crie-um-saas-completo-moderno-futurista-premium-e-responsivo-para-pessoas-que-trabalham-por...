@@ -8,7 +8,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/supabase/client";
-import { cn } from "@/utils";
+import { cn } from "@/lib/utils";
 
 const navigation = [
   { to: "/app", label: "Dashboard", icon: LayoutDashboard },
