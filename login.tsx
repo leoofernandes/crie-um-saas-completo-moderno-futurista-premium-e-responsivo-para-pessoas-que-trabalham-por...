@@ -35,9 +35,14 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
     if (error) {
-      const description = error.message.toLowerCase().includes("email not confirmed")
-        ? "Confirme seu e-mail antes de entrar."
-        : "E-mail ou senha inválidos.";
+      const message = error.message.toLowerCase();
+      const description = message.includes("invalid login credentials")
+        ? "E-mail ou senha incorretos."
+        : message.includes("email not confirmed")
+          ? "Confirme seu e-mail antes de entrar."
+          : message.includes("supabase") || message.includes("api key") || message.includes("url")
+            ? "O serviço de autenticação está temporariamente indisponível."
+            : "Não foi possível concluir o acesso. Tente novamente.";
       toast.error("Não foi possível entrar", { description });
       return;
     }
