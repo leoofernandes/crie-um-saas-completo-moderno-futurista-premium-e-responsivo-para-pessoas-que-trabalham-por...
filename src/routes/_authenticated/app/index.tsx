@@ -22,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency, greeting } from "@/lib/format";
 import { paymentsQuery, profileQuery, vehiclesQuery } from "@/lib/queries";
 
-export const Route = createFileRoute("/_authenticated/app")({
+export const Route = createFileRoute("/_authenticated/app/")({
   head: () => ({
     meta: [
       { title: "Painel da frota — movvia" },
