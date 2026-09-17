@@ -35,7 +35,10 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
     if (error) {
-      toast.error("Não foi possível entrar", { description: "Confira seu e-mail e sua senha." });
+      const description = error.message.toLowerCase().includes("email not confirmed")
+        ? "Confirme seu e-mail antes de entrar."
+        : "E-mail ou senha inválidos.";
+      toast.error("Não foi possível entrar", { description });
       return;
     }
     toast.success("Bem-vindo de volta!");
