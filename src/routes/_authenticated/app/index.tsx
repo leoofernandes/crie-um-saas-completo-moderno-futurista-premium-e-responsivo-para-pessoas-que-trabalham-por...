@@ -1,24 +1,17 @@
-import { useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  Bell,
   Car,
   ChevronRight,
   CircleDollarSign,
-  LayoutDashboard,
-  LogOut,
-  Menu,
   Plus,
   ReceiptText,
   Users,
   WalletCards,
-  Wrench,
 } from "lucide-react";
-import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency, greeting } from "@/lib/format";
 import { paymentsQuery, profileQuery, vehiclesQuery } from "@/lib/queries";
 
@@ -37,19 +30,7 @@ export const Route = createFileRoute("/_authenticated/app/")({
   component: DashboardPage,
 });
 
-const desktopNav = [
-  { icon: LayoutDashboard, label: "Dashboard", active: true },
-  { icon: Car, label: "Carros" },
-  { icon: Users, label: "Clientes" },
-  { icon: WalletCards, label: "Pagamentos" },
-  { icon: Wrench, label: "Manutenções" },
-  { icon: ReceiptText, label: "Despesas" },
-];
-
 function DashboardPage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [signingOut, setSigningOut] = useState(false);
   const profile = useQuery(profileQuery);
   const vehicles = useQuery(vehiclesQuery);
   const payments = useQuery(paymentsQuery);
@@ -63,52 +44,18 @@ function DashboardPage() {
     };
   }, [payments.data]);
 
-  async function signOut() {
-    setSigningOut(true);
-    await supabase.auth.signOut();
-    queryClient.clear();
-    navigate({ to: "/login" });
-  }
-
   const fleet = vehicles.data ?? [];
   const firstName = profile.data?.full_name?.trim().split(/\s+/)[0] ?? "";
   const isLoading = profile.isLoading || vehicles.isLoading || payments.isLoading;
 
   return (
-    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[240px_1fr]">
-      <aside className="hidden border-r border-sidebar-border bg-sidebar lg:flex lg:min-h-screen lg:flex-col">
-        <div className="flex h-20 items-center border-b border-sidebar-border px-6"><Logo /></div>
-        <nav className="flex-1 space-y-1 p-3">
-          {desktopNav.map(({ icon: Icon, label, active }) => (
-            <div key={label} className={active ? "flex h-11 items-center gap-3 rounded-md bg-sidebar-accent px-3 text-sm font-medium text-sidebar-primary" : "flex h-11 items-center gap-3 rounded-md px-3 text-sm text-sidebar-foreground/65"}>
-              <Icon className="size-4" />{label}
-            </div>
-          ))}
-        </nav>
-        <div className="border-t border-sidebar-border p-3">
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={signOut} disabled={signingOut}>
-            <LogOut /> Sair
-          </Button>
-        </div>
-      </aside>
-
-      <main className="min-w-0 pb-24 lg:pb-8">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-xl sm:px-6 lg:h-20 lg:px-8">
-          <div className="lg:hidden"><Logo /></div>
-          <p className="hidden text-sm text-muted-foreground lg:block">Visão geral da sua frota</p>
-          <div className="flex items-center gap-1">
-            <Button size="icon" variant="ghost" aria-label="Notificações"><Bell /></Button>
-            <Button size="icon" variant="ghost" className="lg:hidden" aria-label="Menu"><Menu /></Button>
-          </div>
-        </header>
-
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-9">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-9">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm font-medium text-brand">{greeting()}</p>
               {isLoading ? <Skeleton className="mt-2 h-9 w-56" /> : <h1 className="mt-1 font-display text-3xl font-bold">{firstName ? `${firstName},` : "Sua frota"} tudo sob controle.</h1>}
             </div>
-            <Button disabled title="Cadastro de veículos será liberado na próxima etapa"><Plus /> Cadastrar carro</Button>
+            <Button asChild><Link to="/app/veiculos"><Plus /> Cadastrar carro</Link></Button>
           </div>
 
           <section className="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -130,16 +77,10 @@ function DashboardPage() {
             <div className="border-y border-border py-6">
               <h2 className="font-display text-lg font-semibold">Ações rápidas</h2>
               <div className="mt-4 divide-y divide-border">
-                {[{ icon: Car, text: "Cadastrar um carro" }, { icon: Users, text: "Adicionar cliente" }, { icon: WalletCards, text: "Registrar pagamento" }].map(({ icon: Icon, text }) => <div key={text} className="flex h-14 items-center gap-3 text-sm text-muted-foreground"><Icon className="size-4 text-brand" /><span className="flex-1">{text}</span><ChevronRight className="size-4" /></div>)}
+                 {[{ icon: Car, text: "Cadastrar um carro", to: "/app/veiculos" as const }, { icon: Users, text: "Adicionar cliente", to: "/app/clientes" as const }, { icon: WalletCards, text: "Registrar pagamento", to: "/app/pagamentos" as const }].map(({ icon: Icon, text, to }) => <Link to={to} key={text} className="flex h-14 items-center gap-3 text-sm text-muted-foreground transition-colors hover:text-foreground"><Icon className="size-4 text-brand" /><span className="flex-1">{text}</span><ChevronRight className="size-4" /></Link>)}
               </div>
             </div>
           </section>
-        </div>
-      </main>
-
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid h-16 grid-cols-5 border-t border-border bg-background/95 px-2 backdrop-blur-xl lg:hidden">
-        {[{ icon: LayoutDashboard, label: "Início" }, { icon: Car, label: "Carros" }, { icon: Users, label: "Clientes" }, { icon: WalletCards, label: "Pagamentos" }, { icon: Menu, label: "Mais" }].map(({ icon: Icon, label }, index) => <div key={label} className={index === 0 ? "flex flex-col items-center justify-center gap-1 text-[11px] text-brand" : "flex flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground"}><Icon className="size-4" />{label}</div>)}
-      </nav>
     </div>
   );
 }
