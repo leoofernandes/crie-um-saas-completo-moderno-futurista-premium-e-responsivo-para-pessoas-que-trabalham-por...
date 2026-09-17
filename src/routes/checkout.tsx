@@ -50,6 +50,8 @@ function CheckoutPage() {
       ? plan.price_monthly_cents
       : plan.price_yearly_cents
     : null;
+  const trialEndsAt = new Date();
+  trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
   async function handleSubscribe() {
     if (!plan) return;
@@ -67,17 +69,15 @@ function CheckoutPage() {
       return;
     }
 
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
-
     const { error } = await supabase.from("subscriptions").insert({
       user_id: userId,
       plan_id: plan.id,
       status: "trial",
-      billing_cycle: cycle,
+      billing_period: cycle,
       trial_ends_at: trialEndsAt.toISOString(),
-      current_period_starts_at: new Date().toISOString(),
-      current_period_ends_at: trialEndsAt.toISOString(),
+      started_at: new Date().toISOString(),
+      renews_at: trialEndsAt.toISOString(),
+      vehicle_limit: plan.vehicle_limit,
     });
 
     setLoading(false);
@@ -155,9 +155,6 @@ function CheckoutPage() {
       </div>
     );
   }
-
-  const trialEndsAt = new Date();
-  trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
   return (
     <div className="aurora grid-backdrop min-h-screen px-4 py-12">

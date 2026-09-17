@@ -351,6 +351,7 @@ export type Database = {
           full_name: string | null
           id: string
           onboarding_done: boolean
+          role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           whatsapp: string | null
         }
@@ -361,6 +362,7 @@ export type Database = {
           full_name?: string | null
           id: string
           onboarding_done?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           whatsapp?: string | null
         }
@@ -371,6 +373,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           onboarding_done?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           whatsapp?: string | null
         }
@@ -715,6 +718,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      app_role: "user" | "admin"
       lead_status: "novo" | "em_atendimento" | "alugado" | "sem_interesse"
       payment_status: "pago" | "pendente" | "atrasado" | "cancelado"
       rental_periodicity: "semanal" | "quinzenal" | "mensal" | "personalizada"
@@ -858,6 +862,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["user", "admin"],
       lead_status: ["novo", "em_atendimento", "alugado", "sem_interesse"],
       payment_status: ["pago", "pendente", "atrasado", "cancelado"],
       rental_periodicity: ["semanal", "quinzenal", "mensal", "personalizada"],
