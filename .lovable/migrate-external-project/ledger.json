@@ -1,0 +1,18 @@
+{
+  "capabilities": [
+    {"capability":"code","source":"current Lovable project","outcome":"preserve","status":"inspected","next_action":"complete remaining application routes and behavior"},
+    {"capability":"schema","source":"Lovable Cloud migrations","outcome":"migrate","status":"ready","next_action":"apply versioned migrations to the connected external Supabase project"},
+    {"capability":"records","source":"Lovable Cloud database","outcome":"migrate","status":"blocked","next_action":"export application table records and import in dependency order after external project connection"},
+    {"capability":"auth identities","source":"Lovable Cloud Auth","outcome":"migrate","status":"blocked","next_action":"transfer users through a secure server-side export/import after external project connection"},
+    {"capability":"authorization","source":"RLS policies and triggers","outcome":"preserve","status":"ready","next_action":"apply policies, grants, functions and triggers"},
+    {"capability":"uploaded file bytes","source":"vehicle-photos and site-assets private buckets","outcome":"migrate","status":"blocked","next_action":"copy objects after external project connection"},
+    {"capability":"external providers","source":"none active","outcome":"defer","status":"verified","next_action":"none"},
+    {"capability":"payments","source":"visual checkout only","outcome":"preserve","status":"inspected","next_action":"keep as non-processing structure"},
+    {"capability":"public endpoints","source":"catalog routes planned","outcome":"implement","status":"pending","next_action":"build and verify catalog and lead intake"},
+    {"capability":"callbacks and webhooks","source":"none active","outcome":"defer","status":"verified","next_action":"none"},
+    {"capability":"schedules","source":"none active","outcome":"defer","status":"verified","next_action":"none"},
+    {"capability":"secrets","source":"managed cloud environment","outcome":"replace","status":"blocked","next_action":"bind generated external Supabase project values through the secure connection flow"},
+    {"capability":"cutover","source":"Lovable Cloud to external Supabase","outcome":"migrate","status":"blocked","next_action":"connect the new project and switch only after parity verification"},
+    {"capability":"verification","source":"preview and database","outcome":"verify","status":"in_progress","next_action":"test auth, CRUD, storage, public catalog and mobile flows"}
+  ]
+}
