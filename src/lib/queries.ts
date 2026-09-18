@@ -172,3 +172,49 @@ export const vehicleQuery = (id: string) =>
       return data as (Vehicle & { vehicle_photos: VehiclePhoto[] }) | null;
     },
   });
+export const publicSiteQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["public-site", slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("public_sites")
+        .select("*")
+        .eq("slug", slug)
+        .eq("is_published", true)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data as PublicSite | null;
+    },
+  });
+
+export const publicVehiclesQuery = (userId: string) =>
+  queryOptions({
+    queryKey: ["public-vehicles", userId],
+    queryFn: () =>
+      unwrap<(Vehicle & { vehicle_photos: VehiclePhoto[] })[]>(
+        supabase
+          .from("vehicles")
+          .select("*, vehicle_photos(*)")
+          .eq("user_id", userId)
+          .eq("show_in_catalog", true)
+          .neq("status", "inativo")
+          .order("created_at", { ascending: false }),
+      ),
+    enabled: Boolean(userId),
+  });
+
+export const publicVehicleQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["public-vehicle", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("*, vehicle_photos(*)")
+        .eq("id", id)
+        .eq("show_in_catalog", true)
+        .neq("status", "inativo")
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data as (Vehicle & { vehicle_photos: VehiclePhoto[] }) | null;
+    },
+  });
