@@ -20,6 +20,7 @@ import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as AuthenticatedAppVeiculosIdRouteImport } from './routes/_authenticated/app/veiculos.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -75,6 +76,12 @@ const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
+const AuthenticatedAppVeiculosIdRoute =
+  AuthenticatedAppVeiculosIdRouteImport.update({
+    id: '/veiculos/$id',
+    path: '/veiculos/$id',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/termos': typeof TermosRoute
   '/app': typeof AuthenticatedAppIndexRoute
+  '/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,6 +121,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/_authenticated/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/app'
     | '/app/'
+    | '/app/veiculos/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/recuperar-senha'
     | '/termos'
     | '/app'
+    | '/app/veiculos/$id'
   id:
     | '__root__'
     | '/'
@@ -150,6 +162,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/_authenticated/app'
     | '/_authenticated/app/'
+    | '/_authenticated/app/veiculos/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -243,15 +256,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/veiculos/$id': {
+      id: '/_authenticated/app/veiculos/$id'
+      path: '/veiculos/$id'
+      fullPath: '/app/veiculos/$id'
+      preLoaderRoute: typeof AuthenticatedAppVeiculosIdRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
   }
 }
 
 interface AuthenticatedAppRouteRouteChildren {
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+  AuthenticatedAppVeiculosIdRoute: typeof AuthenticatedAppVeiculosIdRoute
 }
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
+  AuthenticatedAppVeiculosIdRoute: AuthenticatedAppVeiculosIdRoute,
 }
 
 const AuthenticatedAppRouteRouteWithChildren =

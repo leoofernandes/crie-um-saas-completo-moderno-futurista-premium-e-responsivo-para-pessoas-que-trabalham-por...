@@ -158,3 +158,17 @@ export const PAYMENT_STATUS_LABEL: Record<string, string> = {
   atrasado: "Atrasado",
   cancelado: "Cancelado",
 };
+
+export const vehicleQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["vehicle", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("*, vehicle_photos(*)")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data as (Vehicle & { vehicle_photos: VehiclePhoto[] }) | null;
+    },
+  });
