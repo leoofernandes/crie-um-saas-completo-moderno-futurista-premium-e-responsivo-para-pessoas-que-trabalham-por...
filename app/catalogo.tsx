@@ -2,6 +2,119 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { leadsQuery, siteQuery } from "@/lib/queries";
-import { supabase } from "@/supabase/client";
-export const Route = createFileRoute("/_authenticated/app/catalogo")({ component: CatalogPage });
-function CatalogPage(){const site=useQuery(siteQuery),leads=useQuery(leadsQuery),client=useQueryClient();const [published,setPublished]=useState<boolean|null>(null);const [status,setStatus]=useState("");const current=published??site.data?.is_published??false;const save=async()=>{setStatus("");const {data:{user}}=await supabase.auth.getUser();if(!user){setStatus("Sessão expirada.");return}const payload={is_published:current,display_name:site.data?.display_name??"Meu catálogo",slug:site.data?.slug??user.id};const result=site.data?await supabase.from("public_sites").update({is_published:current}).eq("id",site.data.id):await supabase.from("public_sites").insert({...payload,user_id:user.id});setStatus(result.error?result.error.message:"Catálogo salvo com sucesso.");client.invalidateQueries({queryKey:["public_site"]});};if(site.isLoading||leads.isLoading)return <main className="mx-auto max-w-4xl px-4 py-8">Carregando...</main>;return <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6"><h1 className="font-display text-3xl font-bold">Catálogo</h1><div className="mt-6 rounded-md border border-border bg-card p-5"><h2 className="font-display text-lg font-semibold">Publicação</h2><p className="mt-1 text-sm text-muted-foreground">{current?"Seu catálogo está publicado.":"Seu catálogo está oculto."}</p><button onClick={()=>setPublished(!current)} className="mt-4 rounded-md border border-border px-4 py-2">{current?"Despublicar":"Publicar catálogo"}</button><button onClick={save} className="ml-3 rounded-md bg-primary px-4 py-2 text-primary-foreground">Salvar</button>{current&&site.data&&<p className="mt-4 text-sm text-brand">Link: /catalogo/{site.data.slug}</p>}{status&&<p className="mt-3 text-sm text-muted-foreground">{status}</p>}</div><section className="mt-8"><h2 className="font-display text-lg font-semibold">Leads recebidos</h2>{leads.isError?<p className="mt-3 text-destructive">Não foi possível carregar os leads.</p>:!leads.data?.length?<p className="mt-3 text-sm text-muted-foreground">Nenhum lead recebido.</p>:<div className="mt-3 divide-y divide-border rounded-md border border-border">{leads.data.map(l=><div className="p-4" key={l.id}><p className="font-medium">{l.name}</p><p className="text-sm text-muted-foreground">{l.whatsapp}{l.message?` · ${l.message}`:""}</p></div>)}</div>}</section></main>}
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/_authenticated/app/catalogo")({
+  component: CatalogPage,
+});
+
+function CatalogPage() {
+  const site = useQuery(siteQuery);
+  const leads = useQuery(leadsQuery);
+  const client = useQueryClient();
+  const [published, setPublished] = useState<boolean | null>(null);
+  const [status, setStatus] = useState("");
+  const current = published ?? site.data?.is_published ?? false;
+
+  const save = async () => {
+    setStatus("");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setStatus("Sessão expirada.");
+      return;
+    }
+
+    const payload = {
+      is_published: current,
+      display_name: site.data?.display_name ?? "Meu catálogo",
+      slug: site.data?.slug ?? user.id,
+    };
+
+    const result = site.data
+      ? await supabase
+          .from("public_sites")
+          .update({ is_published: current })
+          .eq("id", site.data.id)
+      : await supabase
+          .from("public_sites")
+          .insert({ ...payload, user_id: user.id });
+
+    setStatus(
+      result.error ? result.error.message : "Catálogo salvo com sucesso.",
+    );
+    client.invalidateQueries({ queryKey: ["public_site"] });
+  };
+
+  if (site.isLoading || leads.isLoading) {
+    return (
+      <main className="mx-auto max-w-4xl px-4 py-8">
+        Carregando...
+      </main>
+    );
+  }
+
+  return (
+    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+      <h1 className="font-display text-3xl font-bold">Catálogo</h1>
+
+      <div className="mt-6 rounded-md border border-border bg-card p-5">
+        <h2 className="font-display text-lg font-semibold">Publicação</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {current
+            ? "Seu catálogo está publicado."
+            : "Seu catálogo está oculto."}
+        </p>
+
+        <button
+          onClick={() => setPublished(!current)}
+          className="mt-4 rounded-md border border-border px-4 py-2"
+        >
+          {current ? "Despublicar" : "Publicar catálogo"}
+        </button>
+        <button
+          onClick={save}
+          className="ml-3 rounded-md bg-primary px-4 py-2 text-primary-foreground"
+        >
+          Salvar
+        </button>
+
+        {current && site.data && (
+          <p className="mt-4 text-sm text-brand">
+            Link: /catalogo/{site.data.slug}
+          </p>
+        )}
+        {status && (
+          <p className="mt-3 text-sm text-muted-foreground">{status}</p>
+        )}
+      </div>
+
+      <section className="mt-8">
+        <h2 className="font-display text-lg font-semibold">Leads recebidos</h2>
+        {leads.isError ? (
+          <p className="mt-3 text-destructive">
+            Não foi possível carregar os leads.
+          </p>
+        ) : !leads.data?.length ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Nenhum lead recebido.
+          </p>
+        ) : (
+          <div className="mt-3 divide-y divide-border rounded-md border border-border">
+            {leads.data.map((lead) => (
+              <div className="p-4" key={lead.id}>
+                <p className="font-medium">{lead.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {lead.whatsapp}
+                  {lead.message ? ` · ${lead.message}` : ""}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </main>
+  );
+}
