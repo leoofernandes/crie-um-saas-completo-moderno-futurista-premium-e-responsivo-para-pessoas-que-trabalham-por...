@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { paymentsQuery, expensesQuery, maintenancesQuery, vehiclesQuery } from "@/queries";
-import { formatCurrency } from "@/format";
+import { paymentsQuery, expensesQuery, maintenancesQuery, vehiclesQuery } from "@/lib/queries";
+import { formatCurrency } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/app/relatorios")({ component: ReportsPage });
+
 function ReportsPage() {
   const payments = useQuery(paymentsQuery), expenses = useQuery(expensesQuery), maintenances = useQuery(maintenancesQuery), vehicles = useQuery(vehiclesQuery);
   const loading = [payments, expenses, maintenances, vehicles].some((q) => q.isLoading);
