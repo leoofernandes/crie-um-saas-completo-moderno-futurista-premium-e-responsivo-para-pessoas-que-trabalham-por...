@@ -63,7 +63,7 @@ function VehicleDetailPage() {
   }
 
   async function saveField(values: Record<string, unknown>) {
-    const { error } = await supabase.from("vehicles").update(values).eq("id", id);
+    const { error } = await supabase.from("vehicles").update(values as never).eq("id", id);
     if (error) { toast.error(error.message); return; }
     refresh();
     toast.success("Veículo atualizado.");
