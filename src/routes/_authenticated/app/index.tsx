@@ -55,8 +55,18 @@ function DashboardPage() {
               <p className="text-sm font-medium text-brand">{greeting()}</p>
               {isLoading ? <Skeleton className="mt-2 h-9 w-56" /> : <h1 className="mt-1 font-display text-3xl font-bold">{firstName ? `${firstName},` : "Sua frota"} tudo sob controle.</h1>}
             </div>
-            <Button asChild><Link to="/app/veiculos"><Plus /> Cadastrar carro</Link></Button>
+                     <Button asChild><Link to="/app/veiculos"><Plus /> Cadastrar carro</Link></Button>
           </div>
+
+          {!isLoading && profile.data && !profile.data.onboarding_done && (
+            <div className="mt-5 flex flex-col gap-3 rounded-md border border-brand/30 bg-brand/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-medium text-brand">Vamos configurar sua frota?</p>
+                <p className="text-sm text-muted-foreground">Leva menos de 1 minuto.</p>
+              </div>
+              <Button asChild size="sm"><Link to="/app/onboarding">Começar</Link></Button>
+            </div>
+          )}
 
           <section className="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
             <Metric label="Seus carros" value={String(fleet.length)} detail={`${fleet.filter((item) => item.status === "alugado").length} alugados`} icon={Car} loading={isLoading} />
