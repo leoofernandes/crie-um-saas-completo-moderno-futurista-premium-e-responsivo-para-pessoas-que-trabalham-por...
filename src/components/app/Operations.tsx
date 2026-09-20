@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency, formatDate, parseCurrencyToCents } from "@/lib/format";
-import { customersQuery, expensesQuery, maintenancesQuery, paymentsQuery, PERIODICITY_LABEL, rentalsQuery, VEHICLE_STATUS_LABEL, vehiclesQuery } from "@/lib/queries";
+import { customersQuery, expensesQuery, maintenancesQuery, paymentsQuery, PERIODICITY_LABEL, rentalsQuery, subscriptionQuery, VEHICLE_STATUS_LABEL, vehiclesQuery } from "@/lib/queries";
 
 type Table = keyof Database["public"]["Tables"];
 
