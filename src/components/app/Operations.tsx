@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Car, Contact, ReceiptText, Users, WalletCards, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { EntityPage } from "./EntityPage";
@@ -34,11 +34,30 @@ function RecordCard({ title, subtitle, badge, children }: { title: string; subti
 function value(form: FormData, key: string) { return String(form.get(key) ?? "").trim(); }
 
 export function VehiclesPage() {
-  const query = useQuery(vehiclesQuery); const [open, setOpen] = useState(false);
+  const query = useQuery(vehiclesQuery);
+  const subscription = useQuery(subscriptionQuery);
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
   const mutation = useInsert("vehicles", "vehicles");
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const f = new FormData(event.currentTarget); mutation.mutate({ brand: value(f,"brand"), model: value(f,"model"), year: value(f,"year") ? Number(value(f,"year")) : null, plate: value(f,"plate") || null, category: value(f,"category") || null, mileage: value(f,"mileage") ? Number(value(f,"mileage")) : null, rental_price_cents: parseCurrencyToCents(value(f,"price")), rental_periodicity: value(f,"periodicity") || "semanal", status: value(f,"status") || "disponivel", description: value(f,"description") || null, show_in_catalog: true }, { onSuccess: () => setOpen(false) }); }
   const rows = query.data ?? [];
-  return <><EntityPage title="Seus carros" description="Status, valor e disponibilidade da sua frota em um só lugar." actionLabel="Cadastrar carro" onAction={() => setOpen(true)} icon={Car} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum carro cadastrado" emptyText="Cadastre seu primeiro carro para começar a controlar a frota."><ListGrid>
+  const limit = subscription.data?.vehicle_limit ?? null;
+  const atLimit = limit != null && rows.length >= limit;
+  function handleAction() {
+    if (atLimit) {
+      toast.error(`Você atingiu o limite de ${limit} veículos do seu plano.`, { action: { label: "Fazer upgrade", onClick: () => navigate({ to: "/planos" }) } });
+      return;
+    }
+    setOpen(true);
+  }
+  return <><EntityPage title="Seus carros" description="Status, valor e disponibilidade da sua frota em um só lugar." actionLabel="Cadastrar carro" onAction={handleAction} icon={Car} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum carro cadastrado" emptyText="Cadastre seu primeiro carro para começar a controlar a frota.">
+  {atLimit && (
+    <div className="mb-5 flex flex-col gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-destructive">Você atingiu o limite de {limit} veículos do seu plano.</p>
+      <button type="button" className="text-sm font-medium text-brand hover:underline" onClick={() => navigate({ to: "/planos" })}>Fazer upgrade</button>
+    </div>
+  )}
+  <ListGrid>
   {rows.map((car) => (
     <Link key={car.id} to="/app/veiculos/$id" params={{ id: car.id }} className="block">
       <RecordCard title={`${car.brand} ${car.model}`} subtitle={[car.year, car.plate].filter(Boolean).join(" • ")} badge={VEHICLE_STATUS_LABEL[car.status]}>
