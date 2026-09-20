@@ -218,3 +218,19 @@ export const publicVehicleQuery = (id: string) =>
       return data as (Vehicle & { vehicle_photos: VehiclePhoto[] }) | null;
     },
   });
+export const subscriptionQuery = queryOptions({
+  queryKey: ["subscription"],
+  queryFn: async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data;
+  },
+});
