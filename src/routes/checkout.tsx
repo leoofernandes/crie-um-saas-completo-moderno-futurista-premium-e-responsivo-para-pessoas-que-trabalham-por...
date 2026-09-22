@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Check, AlertCircle } from "lucide-react";
+import { Loader2, Check, AlertCircle, CreditCard } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/brand/Logo";
@@ -16,6 +16,14 @@ const searchSchema = z.object({
   plano: z.string().optional(),
   ciclo: z.enum(["mensal", "anual"]).optional(),
 });
+
+const PRYVO_CHECKOUT_LINKS: Record<string, string> = {
+  "start:mensal": "https://pryvo.site/c/caztsu2",
+  "start:anual": "https://pryvo.site/c/yqeoaz5",
+  "pro:mensal": "https://pryvo.site/c/w3xt4s4",
+  "pro:anual": "https://pryvo.site/c/me9njc6",
+  "frota:mensal": "https://pryvo.site/c/f7w4gin",
+};
 
 export const Route = createFileRoute("/checkout")({
   validateSearch: searchSchema,
@@ -53,21 +61,31 @@ function CheckoutPage() {
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
-  async function handleSubscribe() {
-    if (!plan) return;
-    setLoading(true);
+  const pryvoLink = plan ? PRYVO_CHECKOUT_LINKS[`${plan.code}:${cycle}`] : undefined;
 
+  async function requireSession() {
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData.session?.user?.id;
-
     if (!userId) {
-      setLoading(false);
-      toast.error("Você precisa estar logado", {
-        description: "Redirecionando para o login.",
-      });
+      toast.error("Você precisa estar logado", { description: "Redirecionando para o login." });
       navigate({ to: "/login" });
-      return;
+      return null;
     }
+    return userId;
+  }
+
+  async function handlePay() {
+    if (!pryvoLink) return;
+    const userId = await requireSession();
+    if (!userId) return;
+    window.location.href = pryvoLink;
+  }
+
+  async function handleTrial() {
+    if (!plan) return;
+    setLoading(true);
+    const userId = await requireSession();
+    if (!userId) { setLoading(false); return; }
 
     const { error } = await supabase.from("subscriptions").insert({
       user_id: userId,
@@ -83,16 +101,12 @@ function CheckoutPage() {
     setLoading(false);
 
     if (error) {
-      toast.error("Não foi possível ativar sua assinatura", {
-        description: error.message,
-      });
+      toast.error("Não foi possível ativar sua assinatura", { description: error.message });
       return;
     }
 
     setConfirmed(true);
-    toast.success("Assinatura ativada", {
-      description: `Você tem ${trialDays} dias de teste.`,
-    });
+    toast.success("Assinatura ativada", { description: `Você tem ${trialDays} dias de teste.` });
   }
 
   if (plansLoading) {
@@ -166,7 +180,7 @@ function CheckoutPage() {
           <Steps current={3} />
           <h1 className="mt-5 font-display text-2xl font-bold">Finalize sua assinatura</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Revise o plano e comece seu teste grátis.
+            Revise o plano e escolha como quer começar.
           </p>
 
           <div className="mt-6 rounded-xl border border-border bg-surface/50 p-5">
@@ -175,9 +189,11 @@ function CheckoutPage() {
                 <h2 className="font-display text-lg font-semibold">{plan.name}</h2>
                 <p className="text-sm text-muted-foreground">{plan.tagline}</p>
               </div>
-              <span className="rounded-full bg-brand/15 px-2.5 py-1 text-xs font-medium text-brand">
-                {trialDays} dias grátis
-              </span>
+              {!pryvoLink && (
+                <span className="rounded-full bg-brand/15 px-2.5 py-1 text-xs font-medium text-brand">
+                  {trialDays} dias grátis
+                </span>
+              )}
             </div>
 
             <div className="mt-4 inline-flex rounded-full border border-border bg-background p-1">
@@ -218,7 +234,7 @@ function CheckoutPage() {
 
             <ul className="mt-5 space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center gap-2">
-                <Check className="size-4 text-brand" /> Teste grátis de {trialDays} dias
+                <Check className="size-4 text-brand" /> Pix, cartão e mais formas de pagamento
               </li>
               <li className="flex items-center gap-2">
                 <Check className="size-4 text-brand" /> Cancele quando quiser
@@ -229,25 +245,37 @@ function CheckoutPage() {
             </ul>
           </div>
 
-          <div className="mt-6 rounded-xl border border-brand/20 bg-brand/5 p-4 text-sm">
-            <p className="flex items-start gap-2 text-brand">
-              <AlertCircle className="mt-0.5 size-4 shrink-0" />
-              Nenhuma cobrança real será gerada agora. Esta é uma estrutura de checkout; os
-              pagamentos serão configurados em breve.
-            </p>
-          </div>
-
-          <Button
-            className="mt-6 w-full"
-            disabled={loading}
-            onClick={handleSubscribe}
-          >
-            {loading && <Loader2 className="size-4 animate-spin" />}
-            Assinar e começar
-          </Button>
+          {pryvoLink ? (
+            <>
+              <Button className="mt-6 w-full" disabled={loading} onClick={handlePay}>
+                <CreditCard className="size-4" /> Pagar agora e começar
+              </Button>
+              <button
+                type="button"
+                onClick={handleTrial}
+                disabled={loading}
+                className="mt-3 w-full text-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                {loading ? "Aguarde..." : `Prefiro testar grátis por ${trialDays} dias antes`}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="mt-6 rounded-xl border border-brand/20 bg-brand/5 p-4 text-sm">
+                <p className="flex items-start gap-2 text-brand">
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                  Pagamento para este plano ainda está sendo configurado. Você pode começar com o teste grátis por enquanto.
+                </p>
+              </div>
+              <Button className="mt-6 w-full" disabled={loading} onClick={handleTrial}>
+                {loading && <Loader2 className="size-4 animate-spin" />}
+                Começar teste grátis
+              </Button>
+            </>
+          )}
 
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Ao assinar, você concorda com os{" "}
+            Ao continuar, você concorda com os{" "}
             <Link to="/termos" className="text-brand hover:underline">
               Termos de Uso
             </Link>{" "}
