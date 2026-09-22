@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Car, MessageCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { publicSiteQuery, publicVehiclesQuery, PERIODICITY_LABEL, VEHICLE_STATUS_LABEL } from "@/lib/queries";
 import { formatCurrency } from "@/lib/format";
 
