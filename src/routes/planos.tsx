@@ -35,6 +35,7 @@ function PlansPage() {
   const { data: plans = [], isLoading } = useQuery(plansQuery);
   const { data: settings } = useQuery(settingsQuery);
   const trialDays = Number(settings?.["trial_days"] ?? 7);
+  const contactWhatsapp = String(settings?.["contact_whatsapp"] ?? "").replace(/\D/g, "");
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,9 +129,19 @@ function PlansPage() {
                       className="mt-6"
                       variant={highlighted ? "default" : "outline"}
                     >
-                      <Link to="/cadastro" search={{ plano: plan.code, ciclo: cycle }}>
-                        {plan.is_custom ? "Falar com a gente" : "Começar agora"}
-                      </Link>
+                      {plan.is_custom ? (
+                        
+                          href={`https://wa.me/${contactWhatsapp}?text=${encodeURIComponent("Olá! Tenho mais de 100 veículos e quero saber mais sobre o plano Personalizado do movvia.")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Falar com a gente
+                        </a>
+                      ) : (
+                        <Link to="/cadastro" search={{ plano: plan.code, ciclo: cycle }}>
+                          Começar agora
+                        </Link>
+                      )}
                     </Button>
                   </div>
                 );
