@@ -33,7 +33,15 @@ function NavLinks({ onSelect }: { onSelect?: () => void }) {
 }
 
 export function AppShell() {
-  const navigate = useNavigate();
+  const navigate = useNavigate();  const isAdmin = useQuery({
+    queryKey: ["is-admin"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle();
+      return Boolean(data);
+    },
+  });
   const [signingOut, setSigningOut] = useState(false);
   async function signOut() {
     setSigningOut(true);
