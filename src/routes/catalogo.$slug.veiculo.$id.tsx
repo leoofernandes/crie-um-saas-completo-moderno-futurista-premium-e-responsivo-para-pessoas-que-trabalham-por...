@@ -11,7 +11,30 @@ import { publicSiteQuery, publicVehicleQuery, PERIODICITY_LABEL } from "@/lib/qu
 import { formatCurrency } from "@/lib/format";
 
 export const Route = createFileRoute("/catalogo/$slug/veiculo/$id")({
-  head: () => ({ meta: [{ name: "robots", content: "index,follow" }] }),
+  loader: async ({ params }) => {
+    const [{ data: site }, { data: vehicle }] = await Promise.all([
+      supabase.from("public_sites").select("*").eq("slug", params.slug).eq("is_published", true).maybeSingle(),
+      supabase.from("vehicles").select("*, vehicle_photos(*)").eq("id", params.id).eq("show_in_catalog", true).neq("status", "inativo").maybeSingle(),
+    ]);
+    return { site, vehicle };
+  },
+  head: ({ loaderData }) => {
+    const site = loaderData?.site;
+    const vehicle = loaderData?.vehicle;
+    const title = vehicle ? `${vehicle.brand} ${vehicle.model} — ${site?.display_name ?? "Catálogo"}` : "Veículo não encontrado";
+    const description = vehicle?.description || `Confira o ${vehicle?.brand ?? ""} ${vehicle?.model ?? ""} disponível para aluguel.`;
+    const cover = vehicle?.vehicle_photos?.find((p) => p.is_primary) ?? vehicle?.vehicle_photos?.[0];
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        ...(cover ? [{ property: "og:image", content: cover.url }] : []),
+        { name: "robots", content: "index,follow" },
+      ],
+    };
+  },
   component: PublicVehiclePage,
 });
 
