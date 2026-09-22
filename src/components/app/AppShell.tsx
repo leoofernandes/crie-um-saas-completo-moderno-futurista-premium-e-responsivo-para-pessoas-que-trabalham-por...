@@ -52,7 +52,10 @@ export function AppShell() {
     <aside className="hidden border-r border-sidebar-border bg-sidebar lg:flex lg:min-h-screen lg:flex-col">
       <div className="flex h-20 items-center border-b border-sidebar-border px-6"><Logo /></div>
       <div className="flex-1 overflow-y-auto"><NavLinks /></div>
-      <div className="border-t border-sidebar-border p-3"><Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={signOut} disabled={signingOut}><LogOut /> Sair</Button></div>
+            <div className="border-t border-sidebar-border p-3">
+        {isAdmin.data && <Link to="/app/admin" className="mb-1 flex h-9 items-center gap-2 rounded-md px-3 text-xs text-muted-foreground hover:text-foreground"><ShieldCheck className="size-4" /> Administração</Link>}
+        <Button variant="ghost" className="w-full justify-start text-muted-foreground" onClick={signOut} disabled={signingOut}><LogOut /> Sair</Button>
+      </div>
     </aside>
     <main className="min-w-0 pb-20 lg:pb-0">
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-xl sm:px-6 lg:h-20 lg:px-8">
