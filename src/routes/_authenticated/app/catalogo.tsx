@@ -124,6 +124,23 @@ function CatalogPage() {
     setUploadingBanner(false);
   }
 
+  async function downloadQrCode() {
+    if (!publicUrl) return;
+    try {
+      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(publicUrl)}`;
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = "catalogo-qrcode.png";
+      link.click();
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      toast.error("Não foi possível baixar o QR Code.");
+    }
+  }
+
   if (site.isLoading || leads.isLoading) return <main className="mx-auto max-w-4xl px-4 py-8">Carregando...</main>;
 
   const publicUrl = s ? `${window.location.origin}/catalogo/${s.slug}` : null;
@@ -165,6 +182,11 @@ function CatalogPage() {
           </div>
           <div className="mt-5 inline-block rounded-md border border-border bg-white p-3">
             <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(publicUrl!)}`} alt="QR Code do catálogo" width={180} height={180} />
+          </div>
+          <div>
+            <Button type="button" variant="outline" size="sm" className="mt-3" onClick={downloadQrCode}>
+              Baixar QR Code
+            </Button>
           </div>
         </div>
       )}
@@ -224,7 +246,7 @@ function CatalogPage() {
         <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
       </form>
 
-          <section className="mt-8">
+      <section className="mt-8">
         <h2 className="font-display text-lg font-semibold">Leads recebidos</h2>
         {leads.isError ? <p className="mt-3 text-destructive">Não foi possível carregar os leads.</p>
           : !leads.data?.length ? <p className="mt-3 text-sm text-muted-foreground">Nenhum lead recebido.</p>
