@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { formatCurrency, formatDate, parseCurrencyToCents } from "@/lib/format";
-import { customersQuery, expensesQuery, maintenancesQuery, paymentsQuery, PERIODICITY_LABEL, rentalsQuery, subscriptionQuery, VEHICLE_STATUS_LABEL, vehiclesQuery } from "@/lib/queries";
+import { customersQuery, expensesQuery, maintenancesQuery, paymentsQuery, PERIODICITY_LABEL, rentalsQuery, subscriptionQuery, VEHICLE_STATUS_LABEL, vehiclesQuery, type Customer, type Rental } from "@/lib/queries";
 
 type Table = keyof Database["public"]["Tables"];
 
@@ -30,7 +30,7 @@ function useInsert(table: Table, queryKey: string, after?: () => Promise<void> |
 
 function FormGrid({ children }: { children: React.ReactNode }) { return <div className="grid gap-4 sm:grid-cols-2">{children}</div>; }
 function ListGrid({ children }: { children: React.ReactNode }) { return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>; }
-function RecordCard({ title, subtitle, badge, children }: { title: string; subtitle?: string | null; badge?: string; children: React.ReactNode }) { return <article className="min-h-40 rounded-md border border-border bg-card p-5"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="truncate font-display font-semibold">{title}</h2>{subtitle && <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>}</div>{badge && <Badge variant="outline">{badge}</Badge>}</div><div className="mt-5 space-y-2 text-sm text-muted-foreground">{children}</div></article>; }
+function RecordCard({ title, subtitle, badge, children }: { title: string; subtitle?: string | null; badge?: string; children: React.ReactNode }) { return <article className="min-h-40 rounded-md border border-border bg-card p-5 transition-colors hover:border-brand/40"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="truncate font-display font-semibold">{title}</h2>{subtitle && <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>}</div>{badge && <Badge variant="outline">{badge}</Badge>}</div><div className="mt-5 space-y-2 text-sm text-muted-foreground">{children}</div></article>; }
 function value(form: FormData, key: string) { return String(form.get(key) ?? "").trim(); }
 
 export function VehiclesPage() {
@@ -71,19 +71,151 @@ export function VehiclesPage() {
 }
 
 export function CustomersPage() {
-  const query = useQuery(customersQuery); const [open,setOpen]=useState(false); const mutation=useInsert("customers","customers");
-  function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);mutation.mutate({name:value(f,"name"),cpf:value(f,"cpf")||null,whatsapp:value(f,"whatsapp")||null,email:value(f,"email")||null,address:value(f,"address")||null,notes:value(f,"notes")||null},{onSuccess:()=>setOpen(false)});}
-  const rows=query.data??[]; return <><EntityPage title="Seus clientes" description="Contatos e informações essenciais, sem exigir CNPJ." actionLabel="Adicionar cliente" onAction={()=>setOpen(true)} icon={Users} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum cliente cadastrado" emptyText="Adicione um cliente para criar seu primeiro aluguel."><ListGrid>{rows.map(c=><RecordCard key={c.id} title={c.name} subtitle={c.whatsapp||c.email}><p>{c.cpf?`CPF ${c.cpf}`:"CPF não informado"}</p><p>{c.address||"Endereço não informado"}</p></RecordCard>)}</ListGrid></EntityPage><FormDialog open={open} onOpenChange={setOpen} title="Adicionar cliente" description="Você não precisa informar CNPJ." onSubmit={submit} saving={mutation.isPending}><FormGrid><Field label="Nome" htmlFor="name"><Input id="name" name="name" required /></Field><Field label="CPF" htmlFor="cpf"><Input id="cpf" name="cpf" /></Field><Field label="WhatsApp" htmlFor="whatsapp"><Input id="whatsapp" name="whatsapp" /></Field><Field label="E-mail" htmlFor="email"><Input id="email" name="email" type="email" /></Field></FormGrid><Field label="Endereço" htmlFor="address"><Input id="address" name="address" /></Field><Field label="Observações" htmlFor="notes"><Textarea id="notes" name="notes" /></Field></FormDialog></>;
+  const query = useQuery(customersQuery);
+  const client = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Customer | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const mutation = useInsert("customers", "customers");
+
+  function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    mutation.mutate({ name: value(f,"name"), cpf: value(f,"cpf")||null, whatsapp: value(f,"whatsapp")||null, email: value(f,"email")||null, address: value(f,"address")||null, notes: value(f,"notes")||null }, { onSuccess: () => setOpen(false) });
+  }
+
+  async function submitEdit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editing) return;
+    setSavingEdit(true);
+    const f = new FormData(e.currentTarget);
+    const { error } = await supabase.from("customers").update({
+      name: value(f,"name"), cpf: value(f,"cpf")||null, whatsapp: value(f,"whatsapp")||null,
+      email: value(f,"email")||null, address: value(f,"address")||null, notes: value(f,"notes")||null,
+    }).eq("id", editing.id);
+    setSavingEdit(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cliente atualizado.");
+    client.invalidateQueries({ queryKey: ["customers"] });
+    setEditing(null);
+  }
+
+  async function removeCustomer() {
+    if (!editing) return;
+    const { error } = await supabase.from("customers").delete().eq("id", editing.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cliente excluído.");
+    client.invalidateQueries({ queryKey: ["customers"] });
+    setEditing(null);
+  }
+
+  const rows = query.data ?? [];
+  return <>
+    <EntityPage title="Seus clientes" description="Contatos e informações essenciais, sem exigir CNPJ." actionLabel="Adicionar cliente" onAction={() => setOpen(true)} icon={Users} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum cliente cadastrado" emptyText="Adicione um cliente para criar seu primeiro aluguel.">
+      <ListGrid>{rows.map((c) => (
+        <button key={c.id} type="button" onClick={() => setEditing(c)} className="block w-full text-left">
+          <RecordCard title={c.name} subtitle={c.whatsapp || c.email}>
+            <p>{c.cpf ? `CPF ${c.cpf}` : "CPF não informado"}</p>
+            <p>{c.address || "Endereço não informado"}</p>
+          </RecordCard>
+        </button>
+      ))}</ListGrid>
+    </EntityPage>
+
+    <FormDialog open={open} onOpenChange={setOpen} title="Adicionar cliente" description="Você não precisa informar CNPJ." onSubmit={submit} saving={mutation.isPending}>
+      <FormGrid><Field label="Nome" htmlFor="name"><Input id="name" name="name" required /></Field><Field label="CPF" htmlFor="cpf"><Input id="cpf" name="cpf" /></Field><Field label="WhatsApp" htmlFor="whatsapp"><Input id="whatsapp" name="whatsapp" /></Field><Field label="E-mail" htmlFor="email"><Input id="email" name="email" type="email" /></Field></FormGrid>
+      <Field label="Endereço" htmlFor="address"><Input id="address" name="address" /></Field>
+      <Field label="Observações" htmlFor="notes"><Textarea id="notes" name="notes" /></Field>
+    </FormDialog>
+
+    <FormDialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)} title="Editar cliente" description="Atualize os dados ou remova o cliente." onSubmit={submitEdit} saving={savingEdit}>
+      {editing && <>
+        <FormGrid>
+          <Field label="Nome" htmlFor="edit_name"><Input id="edit_name" name="name" defaultValue={editing.name} required /></Field>
+          <Field label="CPF" htmlFor="edit_cpf"><Input id="edit_cpf" name="cpf" defaultValue={editing.cpf ?? ""} /></Field>
+          <Field label="WhatsApp" htmlFor="edit_whatsapp"><Input id="edit_whatsapp" name="whatsapp" defaultValue={editing.whatsapp ?? ""} /></Field>
+          <Field label="E-mail" htmlFor="edit_email"><Input id="edit_email" name="email" type="email" defaultValue={editing.email ?? ""} /></Field>
+        </FormGrid>
+        <Field label="Endereço" htmlFor="edit_address"><Input id="edit_address" name="address" defaultValue={editing.address ?? ""} /></Field>
+        <Field label="Observações" htmlFor="edit_notes"><Textarea id="edit_notes" name="notes" defaultValue={editing.notes ?? ""} /></Field>
+        <button type="button" className="text-sm text-destructive hover:underline" onClick={removeCustomer}>Excluir cliente</button>
+      </>}
+    </FormDialog>
+  </>;
 }
 
-function NativeSelect({name,options,required=true}:{name:string;options:[string,string][];required?:boolean}) { return <select name={name} required={required} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">{options.map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>; }
+function NativeSelect({name,options,required=true,defaultValue}:{name:string;options:[string,string][];required?:boolean;defaultValue?:string}) { return <select name={name} required={required} defaultValue={defaultValue} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">{options.map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>; }
 function RelationSelect({name,options,placeholder}:{name:string;options:{id:string;label:string}[];placeholder:string}) { return <select name={name} required className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="">{placeholder}</option>{options.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select>; }
 
 export function RentalsPage(){
- const query=useQuery(rentalsQuery), cars=useQuery(vehiclesQuery), customers=useQuery(customersQuery); const [open,setOpen]=useState(false); const client=useQueryClient();
+ const query=useQuery(rentalsQuery), cars=useQuery(vehiclesQuery), customers=useQuery(customersQuery);
+ const [open,setOpen]=useState(false);
+ const [editing,setEditing]=useState<Rental | null>(null);
+ const [savingEdit,setSavingEdit]=useState(false);
+ const client=useQueryClient();
  const mutation=useInsert("rentals","rentals",async()=>{await client.invalidateQueries({queryKey:["vehicles"]});});
+
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);const vehicleId=value(f,"vehicle_id");mutation.mutate({vehicle_id:vehicleId,customer_id:value(f,"customer_id"),start_date:value(f,"start_date"),end_date:value(f,"end_date")||null,amount_cents:parseCurrencyToCents(value(f,"amount")),periodicity:value(f,"periodicity"),payment_day:value(f,"payment_day")?Number(value(f,"payment_day")):null,notes:value(f,"notes")||null},{onSuccess:async()=>{await supabase.from("vehicles").update({status:"alugado"}).eq("id",vehicleId);client.invalidateQueries({queryKey:["vehicles"]});setOpen(false);}});}
- const rows=query.data??[], available=(cars.data??[]).filter(c=>c.status==="disponivel"||c.status==="reservado"); return <><EntityPage title="Seus aluguéis" description="Acompanhe quem está com cada carro, valores e vencimentos." actionLabel="Novo aluguel" onAction={()=>setOpen(true)} icon={Contact} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum aluguel ativo" emptyText="Selecione um cliente e um carro disponível para começar."><ListGrid>{rows.map(r=><RecordCard key={r.id} title={r.vehicles?`${r.vehicles.brand} ${r.vehicles.model}`:"Carro"} subtitle={r.customers?.name} badge={r.status}><p>{formatCurrency(r.amount_cents)} • {PERIODICITY_LABEL[r.periodicity]}</p><p>Início em {formatDate(r.start_date)}</p>{r.payment_day&&<p>Pagamento no dia {r.payment_day}</p>}</RecordCard>)}</ListGrid></EntityPage><FormDialog open={open} onOpenChange={setOpen} title="Novo aluguel" description="O carro será marcado como alugado." onSubmit={submit} saving={mutation.isPending}><Field label="Cliente" htmlFor="customer_id"><RelationSelect name="customer_id" placeholder="Selecione" options={(customers.data??[]).map(c=>({id:c.id,label:c.name}))}/></Field><Field label="Carro disponível" htmlFor="vehicle_id"><RelationSelect name="vehicle_id" placeholder="Selecione" options={available.map(c=>({id:c.id,label:`${c.brand} ${c.model}`}))}/></Field><FormGrid><Field label="Data inicial" htmlFor="start_date"><Input name="start_date" id="start_date" type="date" required /></Field><Field label="Data final (opcional)" htmlFor="end_date"><Input name="end_date" id="end_date" type="date" /></Field><Field label="Valor" htmlFor="amount"><Input name="amount" id="amount" placeholder="0,00" required /></Field><Field label="Periodicidade" htmlFor="periodicity"><NativeSelect name="periodicity" options={Object.entries(PERIODICITY_LABEL)} /></Field><Field label="Dia de pagamento" htmlFor="payment_day"><Input name="payment_day" id="payment_day" type="number" min="1" max="31" /></Field></FormGrid><Field label="Observações" htmlFor="notes"><Textarea name="notes" id="notes" /></Field></FormDialog></>;
+
+ async function submitEdit(e: FormEvent<HTMLFormElement>) {
+   e.preventDefault();
+   if (!editing) return;
+   setSavingEdit(true);
+   const f = new FormData(e.currentTarget);
+   const newStatus = value(f, "status");
+   const { error } = await supabase.from("rentals").update({
+     end_date: value(f, "end_date") || null,
+     amount_cents: parseCurrencyToCents(value(f, "amount")),
+     periodicity: value(f, "periodicity"),
+     payment_day: value(f, "payment_day") ? Number(value(f, "payment_day")) : null,
+     status: newStatus,
+     notes: value(f, "notes") || null,
+   }).eq("id", editing.id);
+   setSavingEdit(false);
+   if (error) { toast.error(error.message); return; }
+   if (newStatus === "encerrado" || newStatus === "cancelado") {
+     await supabase.from("vehicles").update({ status: "disponivel" }).eq("id", editing.vehicle_id);
+   }
+   toast.success("Aluguel atualizado.");
+   client.invalidateQueries({ queryKey: ["rentals"] });
+   client.invalidateQueries({ queryKey: ["vehicles"] });
+   setEditing(null);
+ }
+
+ const rows=query.data??[], available=(cars.data??[]).filter(c=>c.status==="disponivel"||c.status==="reservado");
+ return <>
+   <EntityPage title="Seus aluguéis" description="Acompanhe quem está com cada carro, valores e vencimentos." actionLabel="Novo aluguel" onAction={()=>setOpen(true)} icon={Contact} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum aluguel ativo" emptyText="Selecione um cliente e um carro disponível para começar.">
+     <ListGrid>{rows.map(r=>(
+       <button key={r.id} type="button" onClick={() => setEditing(r)} className="block w-full text-left">
+         <RecordCard title={r.vehicles?`${r.vehicles.brand} ${r.vehicles.model}`:"Carro"} subtitle={r.customers?.name} badge={r.status}>
+           <p>{formatCurrency(r.amount_cents)} • {PERIODICITY_LABEL[r.periodicity]}</p>
+           <p>Início em {formatDate(r.start_date)}</p>
+           {r.payment_day&&<p>Pagamento no dia {r.payment_day}</p>}
+         </RecordCard>
+       </button>
+     ))}</ListGrid>
+   </EntityPage>
+   <FormDialog open={open} onOpenChange={setOpen} title="Novo aluguel" description="O carro será marcado como alugado." onSubmit={submit} saving={mutation.isPending}>
+     <Field label="Cliente" htmlFor="customer_id"><RelationSelect name="customer_id" placeholder="Selecione" options={(customers.data??[]).map(c=>({id:c.id,label:c.name}))}/></Field>
+     <Field label="Carro disponível" htmlFor="vehicle_id"><RelationSelect name="vehicle_id" placeholder="Selecione" options={available.map(c=>({id:c.id,label:`${c.brand} ${c.model}`}))}/></Field>
+     <FormGrid><Field label="Data inicial" htmlFor="start_date"><Input name="start_date" id="start_date" type="date" required /></Field><Field label="Data final (opcional)" htmlFor="end_date"><Input name="end_date" id="end_date" type="date" /></Field><Field label="Valor" htmlFor="amount"><Input name="amount" id="amount" placeholder="0,00" required /></Field><Field label="Periodicidade" htmlFor="periodicity"><NativeSelect name="periodicity" options={Object.entries(PERIODICITY_LABEL)} /></Field><Field label="Dia de pagamento" htmlFor="payment_day"><Input name="payment_day" id="payment_day" type="number" min="1" max="31" /></Field></FormGrid>
+     <Field label="Observações" htmlFor="notes"><Textarea name="notes" id="notes" /></Field>
+   </FormDialog>
+
+   <FormDialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)} title="Editar aluguel" description="Atualize valores, datas ou encerre o aluguel." onSubmit={submitEdit} saving={savingEdit}>
+     {editing && <>
+       <p className="text-sm text-muted-foreground">{editing.vehicles ? `${editing.vehicles.brand} ${editing.vehicles.model}` : "Carro"} • {editing.customers?.name}</p>
+       <FormGrid>
+         <Field label="Data final" htmlFor="edit_end_date"><Input name="end_date" id="edit_end_date" type="date" defaultValue={editing.end_date ?? ""} /></Field>
+         <Field label="Valor" htmlFor="edit_amount"><Input name="amount" id="edit_amount" defaultValue={(editing.amount_cents / 100).toFixed(2)} required /></Field>
+         <Field label="Periodicidade" htmlFor="edit_periodicity"><NativeSelect name="periodicity" defaultValue={editing.periodicity} options={Object.entries(PERIODICITY_LABEL)} /></Field>
+         <Field label="Dia de pagamento" htmlFor="edit_payment_day"><Input name="payment_day" id="edit_payment_day" type="number" min="1" max="31" defaultValue={editing.payment_day ?? ""} /></Field>
+         <Field label="Status" htmlFor="edit_status"><NativeSelect name="status" defaultValue={editing.status} options={[["ativo","Ativo"],["encerrado","Encerrado"],["cancelado","Cancelado"]]} /></Field>
+       </FormGrid>
+       <Field label="Observações" htmlFor="edit_notes"><Textarea name="notes" id="edit_notes" defaultValue={editing.notes ?? ""} /></Field>
+     </>}
+   </FormDialog>
+ </>;
 }
 
 export function PaymentsPage(){
