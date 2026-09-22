@@ -129,15 +129,7 @@ function PlansPage() {
                       className="mt-6"
                       variant={highlighted ? "default" : "outline"}
                     >
-                      {plan.is_custom ? (
-                        
-                          href={`https://wa.me/${contactWhatsapp}?text=${encodeURIComponent("Olá! Tenho mais de 100 veículos e quero saber mais sobre o plano Personalizado do movvia.")}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Falar com a gente
-                        </a>
-                      ) : (
+                                         {plan.is_custom ? <a href={`https://wa.me/${contactWhatsapp}?text=${encodeURIComponent("Olá! Tenho mais de 100 veículos e quero saber mais sobre o plano Personalizado do movvia.")}`} target="_blank" rel="noreferrer">Falar com a gente</a> : (
                         <Link to="/cadastro" search={{ plano: plan.code, ciclo: cycle }}>
                           Começar agora
                         </Link>
