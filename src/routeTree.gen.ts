@@ -22,6 +22,7 @@ import { Route as TermosRouteImport } from './routes/termos'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
 import { Route as CatalogoSlugRouteImport } from './routes/catalogo.$slug'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as AuthenticatedAppAdminRouteImport } from './routes/_authenticated/app/admin'
 import { Route as AuthenticatedAppAlugueisRouteImport } from './routes/_authenticated/app/alugueis'
 import { Route as AuthenticatedAppCatalogoRouteImport } from './routes/_authenticated/app/catalogo'
 import { Route as AuthenticatedAppClientesRouteImport } from './routes/_authenticated/app/clientes'
@@ -98,6 +99,11 @@ const CatalogoSlugRoute = CatalogoSlugRouteImport.update({
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthenticatedAppRouteRoute,
+} as any)
+const AuthenticatedAppAdminRoute = AuthenticatedAppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
 const AuthenticatedAppAlugueisRoute =
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/catalogo/$slug': typeof CatalogoSlugRouteWithChildren
+  '/app/admin': typeof AuthenticatedAppAdminRoute
   '/app/alugueis': typeof AuthenticatedAppAlugueisRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/app/clientes': typeof AuthenticatedAppClientesRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/catalogo/$slug': typeof CatalogoSlugRouteWithChildren
+  '/app/admin': typeof AuthenticatedAppAdminRoute
   '/app/alugueis': typeof AuthenticatedAppAlugueisRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/app/clientes': typeof AuthenticatedAppClientesRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
   '/catalogo/$slug': typeof CatalogoSlugRouteWithChildren
+  '/_authenticated/app/admin': typeof AuthenticatedAppAdminRoute
   '/_authenticated/app/alugueis': typeof AuthenticatedAppAlugueisRoute
   '/_authenticated/app/catalogo': typeof AuthenticatedAppCatalogoRoute
   '/_authenticated/app/clientes': typeof AuthenticatedAppClientesRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/app'
     | '/catalogo/$slug'
+    | '/app/admin'
     | '/app/alugueis'
     | '/app/catalogo'
     | '/app/clientes'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/redefinir-senha'
     | '/termos'
     | '/catalogo/$slug'
+    | '/app/admin'
     | '/app/alugueis'
     | '/app/catalogo'
     | '/app/clientes'
@@ -328,6 +339,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/_authenticated/app'
     | '/catalogo/$slug'
+    | '/_authenticated/app/admin'
     | '/_authenticated/app/alugueis'
     | '/_authenticated/app/catalogo'
     | '/_authenticated/app/clientes'
@@ -451,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/admin': {
+      id: '/_authenticated/app/admin'
+      path: '/admin'
+      fullPath: '/app/admin'
+      preLoaderRoute: typeof AuthenticatedAppAdminRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
     '/_authenticated/app/alugueis': {
       id: '/_authenticated/app/alugueis'
       path: '/alugueis'
@@ -560,6 +579,7 @@ const AuthenticatedAppVeiculosRouteWithChildren =
   )
 
 interface AuthenticatedAppRouteRouteChildren {
+  AuthenticatedAppAdminRoute: typeof AuthenticatedAppAdminRoute
   AuthenticatedAppAlugueisRoute: typeof AuthenticatedAppAlugueisRoute
   AuthenticatedAppCatalogoRoute: typeof AuthenticatedAppCatalogoRoute
   AuthenticatedAppClientesRoute: typeof AuthenticatedAppClientesRoute
@@ -575,6 +595,7 @@ interface AuthenticatedAppRouteRouteChildren {
 }
 
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
+  AuthenticatedAppAdminRoute: AuthenticatedAppAdminRoute,
   AuthenticatedAppAlugueisRoute: AuthenticatedAppAlugueisRoute,
   AuthenticatedAppCatalogoRoute: AuthenticatedAppCatalogoRoute,
   AuthenticatedAppClientesRoute: AuthenticatedAppClientesRoute,
