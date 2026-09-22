@@ -234,6 +234,8 @@ function ResumoForm({ car, onSave }: { car: VehicleWithPhotos; onSave: (values: 
       plate: value("plate") || null,
       color: value("color") || null,
       category: value("category") || null,
+      transmission: value("transmission") || null,
+      fuel_type: value("fuel_type") || null,
       mileage: value("mileage") ? Number(value("mileage")) : null,
       rental_price_cents: parseCurrencyToCents(value("price")),
       rental_periodicity: value("periodicity"),
@@ -252,6 +254,24 @@ function ResumoForm({ car, onSave }: { car: VehicleWithPhotos; onSave: (values: 
         <Field label="Placa" htmlFor="plate"><Input id="plate" name="plate" defaultValue={car.plate ?? ""} /></Field>
         <Field label="Cor" htmlFor="color"><Input id="color" name="color" defaultValue={car.color ?? ""} /></Field>
         <Field label="Categoria" htmlFor="category"><Input id="category" name="category" defaultValue={car.category ?? ""} /></Field>
+        <Field label="Câmbio" htmlFor="transmission">
+          <select id="transmission" name="transmission" defaultValue={car.transmission ?? ""} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            <option value="">Não informado</option>
+            <option value="automatico">Automático</option>
+            <option value="manual">Manual</option>
+          </select>
+        </Field>
+        <Field label="Combustível" htmlFor="fuel_type">
+          <select id="fuel_type" name="fuel_type" defaultValue={car.fuel_type ?? ""} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
+            <option value="">Não informado</option>
+            <option value="flex">Flex</option>
+            <option value="gasolina">Gasolina</option>
+            <option value="etanol">Etanol</option>
+            <option value="diesel">Diesel</option>
+            <option value="hibrido">Híbrido</option>
+            <option value="eletrico">Elétrico</option>
+          </select>
+        </Field>
         <Field label="Quilometragem" htmlFor="mileage"><Input id="mileage" name="mileage" type="number" defaultValue={car.mileage ?? ""} /></Field>
         <Field label="Valor do aluguel" htmlFor="price"><Input id="price" name="price" defaultValue={(car.rental_price_cents / 100).toFixed(2)} /></Field>
         <Field label="Periodicidade" htmlFor="periodicity">
