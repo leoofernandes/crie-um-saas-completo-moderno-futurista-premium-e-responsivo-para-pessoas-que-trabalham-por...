@@ -224,11 +224,33 @@ function CatalogPage() {
         <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
       </form>
 
-      <section className="mt-8">
+          <section className="mt-8">
         <h2 className="font-display text-lg font-semibold">Leads recebidos</h2>
         {leads.isError ? <p className="mt-3 text-destructive">Não foi possível carregar os leads.</p>
           : !leads.data?.length ? <p className="mt-3 text-sm text-muted-foreground">Nenhum lead recebido.</p>
-          : <div className="mt-3 divide-y divide-border rounded-md border border-border">{leads.data.map((lead) => <div className="p-4" key={lead.id}><p className="font-medium">{lead.name}</p><p className="text-sm text-muted-foreground">{lead.whatsapp}{lead.message ? ` · ${lead.message}` : ""}</p></div>)}</div>}
+          : <div className="mt-3 divide-y divide-border rounded-md border border-border">{leads.data.map((lead) => (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-4" key={lead.id}>
+                <div>
+                  <p className="font-medium">{lead.name}</p>
+                  <p className="text-sm text-muted-foreground">{lead.whatsapp}{lead.message ? ` · ${lead.message}` : ""}</p>
+                </div>
+                <select
+                  defaultValue={lead.status}
+                  onChange={async (e) => {
+                    const { error } = await supabase.from("site_leads").update({ status: e.target.value }).eq("id", lead.id);
+                    if (error) { toast.error(error.message); return; }
+                    toast.success("Status atualizado.");
+                    client.invalidateQueries({ queryKey: ["leads"] });
+                  }}
+                  className="rounded-md border border-input bg-background px-2 py-1 text-xs"
+                >
+                  <option value="novo">Novo</option>
+                  <option value="em_atendimento">Em atendimento</option>
+                  <option value="alugado">Alugado</option>
+                  <option value="sem_interesse">Sem interesse</option>
+                </select>
+              </div>
+            ))}</div>}
       </section>
     </main>
   );
