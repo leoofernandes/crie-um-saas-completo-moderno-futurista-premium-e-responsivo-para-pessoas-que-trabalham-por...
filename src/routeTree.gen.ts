@@ -17,10 +17,24 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlanosRouteImport } from './routes/planos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as AuthenticatedAppRouteRouteImport } from './routes/_authenticated/app/route'
+import { Route as CatalogoSlugRouteImport } from './routes/catalogo.$slug'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app/index'
+import { Route as AuthenticatedAppAlugueisRouteImport } from './routes/_authenticated/app/alugueis'
+import { Route as AuthenticatedAppCatalogoRouteImport } from './routes/_authenticated/app/catalogo'
+import { Route as AuthenticatedAppClientesRouteImport } from './routes/_authenticated/app/clientes'
+import { Route as AuthenticatedAppConfiguracoesRouteImport } from './routes/_authenticated/app/configuracoes'
+import { Route as AuthenticatedAppDespesasRouteImport } from './routes/_authenticated/app/despesas'
+import { Route as AuthenticatedAppManutencoesRouteImport } from './routes/_authenticated/app/manutencoes'
+import { Route as AuthenticatedAppNotificacoesRouteImport } from './routes/_authenticated/app/notificacoes'
+import { Route as AuthenticatedAppOnboardingRouteImport } from './routes/_authenticated/app/onboarding'
+import { Route as AuthenticatedAppPagamentosRouteImport } from './routes/_authenticated/app/pagamentos'
+import { Route as AuthenticatedAppRelatoriosRouteImport } from './routes/_authenticated/app/relatorios'
+import { Route as AuthenticatedAppVeiculosRouteImport } from './routes/_authenticated/app/veiculos'
 import { Route as AuthenticatedAppVeiculosIdRouteImport } from './routes/_authenticated/app/veiculos.$id'
+import { Route as CatalogoSlugVeiculoIdRouteImport } from './routes/catalogo.$slug.veiculo.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -61,6 +75,11 @@ const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
   path: '/recuperar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
@@ -71,17 +90,93 @@ const AuthenticatedAppRouteRoute = AuthenticatedAppRouteRouteImport.update({
   path: '/app',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const CatalogoSlugRoute = CatalogoSlugRouteImport.update({
+  id: '/catalogo/$slug',
+  path: '/catalogo/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAppIndexRoute = AuthenticatedAppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAppRouteRoute,
 } as any)
-const AuthenticatedAppVeiculosIdRoute =
-  AuthenticatedAppVeiculosIdRouteImport.update({
-    id: '/veiculos/$id',
-    path: '/veiculos/$id',
+const AuthenticatedAppAlugueisRoute =
+  AuthenticatedAppAlugueisRouteImport.update({
+    id: '/alugueis',
+    path: '/alugueis',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const AuthenticatedAppCatalogoRoute =
+  AuthenticatedAppCatalogoRouteImport.update({
+    id: '/catalogo',
+    path: '/catalogo',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppClientesRoute =
+  AuthenticatedAppClientesRouteImport.update({
+    id: '/clientes',
+    path: '/clientes',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppConfiguracoesRoute =
+  AuthenticatedAppConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppDespesasRoute =
+  AuthenticatedAppDespesasRouteImport.update({
+    id: '/despesas',
+    path: '/despesas',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppManutencoesRoute =
+  AuthenticatedAppManutencoesRouteImport.update({
+    id: '/manutencoes',
+    path: '/manutencoes',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppNotificacoesRoute =
+  AuthenticatedAppNotificacoesRouteImport.update({
+    id: '/notificacoes',
+    path: '/notificacoes',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppOnboardingRoute =
+  AuthenticatedAppOnboardingRouteImport.update({
+    id: '/onboarding',
+    path: '/onboarding',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppPagamentosRoute =
+  AuthenticatedAppPagamentosRouteImport.update({
+    id: '/pagamentos',
+    path: '/pagamentos',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppRelatoriosRoute =
+  AuthenticatedAppRelatoriosRouteImport.update({
+    id: '/relatorios',
+    path: '/relatorios',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppVeiculosRoute =
+  AuthenticatedAppVeiculosRouteImport.update({
+    id: '/veiculos',
+    path: '/veiculos',
+    getParentRoute: () => AuthenticatedAppRouteRoute,
+  } as any)
+const AuthenticatedAppVeiculosIdRoute =
+  AuthenticatedAppVeiculosIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => AuthenticatedAppVeiculosRoute,
+  } as any)
+const CatalogoSlugVeiculoIdRoute = CatalogoSlugVeiculoIdRouteImport.update({
+  id: '/veiculo/$id',
+  path: '/veiculo/$id',
+  getParentRoute: () => CatalogoSlugRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -91,10 +186,24 @@ export interface FileRoutesByFullPath {
   '/planos': typeof PlanosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/app': typeof AuthenticatedAppRouteRouteWithChildren
+  '/catalogo/$slug': typeof CatalogoSlugRouteWithChildren
+  '/app/alugueis': typeof AuthenticatedAppAlugueisRoute
+  '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
+  '/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/despesas': typeof AuthenticatedAppDespesasRoute
+  '/app/manutencoes': typeof AuthenticatedAppManutencoesRoute
+  '/app/notificacoes': typeof AuthenticatedAppNotificacoesRoute
+  '/app/onboarding': typeof AuthenticatedAppOnboardingRoute
+  '/app/pagamentos': typeof AuthenticatedAppPagamentosRoute
+  '/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
+  '/app/veiculos': typeof AuthenticatedAppVeiculosRouteWithChildren
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
+  '/catalogo/$slug/veiculo/$id': typeof CatalogoSlugVeiculoIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -104,9 +213,23 @@ export interface FileRoutesByTo {
   '/planos': typeof PlanosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
+  '/catalogo/$slug': typeof CatalogoSlugRouteWithChildren
+  '/app/alugueis': typeof AuthenticatedAppAlugueisRoute
+  '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
+  '/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/app/despesas': typeof AuthenticatedAppDespesasRoute
+  '/app/manutencoes': typeof AuthenticatedAppManutencoesRoute
+  '/app/notificacoes': typeof AuthenticatedAppNotificacoesRoute
+  '/app/onboarding': typeof AuthenticatedAppOnboardingRoute
+  '/app/pagamentos': typeof AuthenticatedAppPagamentosRoute
+  '/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
+  '/app/veiculos': typeof AuthenticatedAppVeiculosRouteWithChildren
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
+  '/catalogo/$slug/veiculo/$id': typeof CatalogoSlugVeiculoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -118,10 +241,24 @@ export interface FileRoutesById {
   '/planos': typeof PlanosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
   '/_authenticated/app': typeof AuthenticatedAppRouteRouteWithChildren
+  '/catalogo/$slug': typeof CatalogoSlugRouteWithChildren
+  '/_authenticated/app/alugueis': typeof AuthenticatedAppAlugueisRoute
+  '/_authenticated/app/catalogo': typeof AuthenticatedAppCatalogoRoute
+  '/_authenticated/app/clientes': typeof AuthenticatedAppClientesRoute
+  '/_authenticated/app/configuracoes': typeof AuthenticatedAppConfiguracoesRoute
+  '/_authenticated/app/despesas': typeof AuthenticatedAppDespesasRoute
+  '/_authenticated/app/manutencoes': typeof AuthenticatedAppManutencoesRoute
+  '/_authenticated/app/notificacoes': typeof AuthenticatedAppNotificacoesRoute
+  '/_authenticated/app/onboarding': typeof AuthenticatedAppOnboardingRoute
+  '/_authenticated/app/pagamentos': typeof AuthenticatedAppPagamentosRoute
+  '/_authenticated/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
+  '/_authenticated/app/veiculos': typeof AuthenticatedAppVeiculosRouteWithChildren
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
+  '/catalogo/$slug/veiculo/$id': typeof CatalogoSlugVeiculoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -133,10 +270,24 @@ export interface FileRouteTypes {
     | '/planos'
     | '/privacidade'
     | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/termos'
     | '/app'
+    | '/catalogo/$slug'
+    | '/app/alugueis'
+    | '/app/catalogo'
+    | '/app/clientes'
+    | '/app/configuracoes'
+    | '/app/despesas'
+    | '/app/manutencoes'
+    | '/app/notificacoes'
+    | '/app/onboarding'
+    | '/app/pagamentos'
+    | '/app/relatorios'
+    | '/app/veiculos'
     | '/app/'
     | '/app/veiculos/$id'
+    | '/catalogo/$slug/veiculo/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -146,9 +297,23 @@ export interface FileRouteTypes {
     | '/planos'
     | '/privacidade'
     | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/termos'
+    | '/catalogo/$slug'
+    | '/app/alugueis'
+    | '/app/catalogo'
+    | '/app/clientes'
+    | '/app/configuracoes'
+    | '/app/despesas'
+    | '/app/manutencoes'
+    | '/app/notificacoes'
+    | '/app/onboarding'
+    | '/app/pagamentos'
+    | '/app/relatorios'
+    | '/app/veiculos'
     | '/app'
     | '/app/veiculos/$id'
+    | '/catalogo/$slug/veiculo/$id'
   id:
     | '__root__'
     | '/'
@@ -159,10 +324,24 @@ export interface FileRouteTypes {
     | '/planos'
     | '/privacidade'
     | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/termos'
     | '/_authenticated/app'
+    | '/catalogo/$slug'
+    | '/_authenticated/app/alugueis'
+    | '/_authenticated/app/catalogo'
+    | '/_authenticated/app/clientes'
+    | '/_authenticated/app/configuracoes'
+    | '/_authenticated/app/despesas'
+    | '/_authenticated/app/manutencoes'
+    | '/_authenticated/app/notificacoes'
+    | '/_authenticated/app/onboarding'
+    | '/_authenticated/app/pagamentos'
+    | '/_authenticated/app/relatorios'
+    | '/_authenticated/app/veiculos'
     | '/_authenticated/app/'
     | '/_authenticated/app/veiculos/$id'
+    | '/catalogo/$slug/veiculo/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -174,7 +353,9 @@ export interface RootRouteChildren {
   PlanosRoute: typeof PlanosRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   RecuperarSenhaRoute: typeof RecuperarSenhaRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   TermosRoute: typeof TermosRoute
+  CatalogoSlugRoute: typeof CatalogoSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -235,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecuperarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/termos': {
       id: '/termos'
       path: '/termos'
@@ -249,6 +437,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppRouteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/catalogo/$slug': {
+      id: '/catalogo/$slug'
+      path: '/catalogo/$slug'
+      fullPath: '/catalogo/$slug'
+      preLoaderRoute: typeof CatalogoSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/app/': {
       id: '/_authenticated/app/'
       path: '/'
@@ -256,24 +451,142 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppIndexRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/_authenticated/app/alugueis': {
+      id: '/_authenticated/app/alugueis'
+      path: '/alugueis'
+      fullPath: '/app/alugueis'
+      preLoaderRoute: typeof AuthenticatedAppAlugueisRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/catalogo': {
+      id: '/_authenticated/app/catalogo'
+      path: '/catalogo'
+      fullPath: '/app/catalogo'
+      preLoaderRoute: typeof AuthenticatedAppCatalogoRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/clientes': {
+      id: '/_authenticated/app/clientes'
+      path: '/clientes'
+      fullPath: '/app/clientes'
+      preLoaderRoute: typeof AuthenticatedAppClientesRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/configuracoes': {
+      id: '/_authenticated/app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/app/configuracoes'
+      preLoaderRoute: typeof AuthenticatedAppConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/despesas': {
+      id: '/_authenticated/app/despesas'
+      path: '/despesas'
+      fullPath: '/app/despesas'
+      preLoaderRoute: typeof AuthenticatedAppDespesasRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/manutencoes': {
+      id: '/_authenticated/app/manutencoes'
+      path: '/manutencoes'
+      fullPath: '/app/manutencoes'
+      preLoaderRoute: typeof AuthenticatedAppManutencoesRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/notificacoes': {
+      id: '/_authenticated/app/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/app/notificacoes'
+      preLoaderRoute: typeof AuthenticatedAppNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/onboarding': {
+      id: '/_authenticated/app/onboarding'
+      path: '/onboarding'
+      fullPath: '/app/onboarding'
+      preLoaderRoute: typeof AuthenticatedAppOnboardingRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/pagamentos': {
+      id: '/_authenticated/app/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/app/pagamentos'
+      preLoaderRoute: typeof AuthenticatedAppPagamentosRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/relatorios': {
+      id: '/_authenticated/app/relatorios'
+      path: '/relatorios'
+      fullPath: '/app/relatorios'
+      preLoaderRoute: typeof AuthenticatedAppRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
+    '/_authenticated/app/veiculos': {
+      id: '/_authenticated/app/veiculos'
+      path: '/veiculos'
+      fullPath: '/app/veiculos'
+      preLoaderRoute: typeof AuthenticatedAppVeiculosRouteImport
+      parentRoute: typeof AuthenticatedAppRouteRoute
+    }
     '/_authenticated/app/veiculos/$id': {
       id: '/_authenticated/app/veiculos/$id'
-      path: '/veiculos/$id'
+      path: '/$id'
       fullPath: '/app/veiculos/$id'
       preLoaderRoute: typeof AuthenticatedAppVeiculosIdRouteImport
-      parentRoute: typeof AuthenticatedAppRouteRoute
+      parentRoute: typeof AuthenticatedAppVeiculosRoute
+    }
+    '/catalogo/$slug/veiculo/$id': {
+      id: '/catalogo/$slug/veiculo/$id'
+      path: '/veiculo/$id'
+      fullPath: '/catalogo/$slug/veiculo/$id'
+      preLoaderRoute: typeof CatalogoSlugVeiculoIdRouteImport
+      parentRoute: typeof CatalogoSlugRoute
     }
   }
 }
 
-interface AuthenticatedAppRouteRouteChildren {
-  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+interface AuthenticatedAppVeiculosRouteChildren {
   AuthenticatedAppVeiculosIdRoute: typeof AuthenticatedAppVeiculosIdRoute
 }
 
+const AuthenticatedAppVeiculosRouteChildren: AuthenticatedAppVeiculosRouteChildren =
+  {
+    AuthenticatedAppVeiculosIdRoute: AuthenticatedAppVeiculosIdRoute,
+  }
+
+const AuthenticatedAppVeiculosRouteWithChildren =
+  AuthenticatedAppVeiculosRoute._addFileChildren(
+    AuthenticatedAppVeiculosRouteChildren,
+  )
+
+interface AuthenticatedAppRouteRouteChildren {
+  AuthenticatedAppAlugueisRoute: typeof AuthenticatedAppAlugueisRoute
+  AuthenticatedAppCatalogoRoute: typeof AuthenticatedAppCatalogoRoute
+  AuthenticatedAppClientesRoute: typeof AuthenticatedAppClientesRoute
+  AuthenticatedAppConfiguracoesRoute: typeof AuthenticatedAppConfiguracoesRoute
+  AuthenticatedAppDespesasRoute: typeof AuthenticatedAppDespesasRoute
+  AuthenticatedAppManutencoesRoute: typeof AuthenticatedAppManutencoesRoute
+  AuthenticatedAppNotificacoesRoute: typeof AuthenticatedAppNotificacoesRoute
+  AuthenticatedAppOnboardingRoute: typeof AuthenticatedAppOnboardingRoute
+  AuthenticatedAppPagamentosRoute: typeof AuthenticatedAppPagamentosRoute
+  AuthenticatedAppRelatoriosRoute: typeof AuthenticatedAppRelatoriosRoute
+  AuthenticatedAppVeiculosRoute: typeof AuthenticatedAppVeiculosRouteWithChildren
+  AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
+}
+
 const AuthenticatedAppRouteRouteChildren: AuthenticatedAppRouteRouteChildren = {
+  AuthenticatedAppAlugueisRoute: AuthenticatedAppAlugueisRoute,
+  AuthenticatedAppCatalogoRoute: AuthenticatedAppCatalogoRoute,
+  AuthenticatedAppClientesRoute: AuthenticatedAppClientesRoute,
+  AuthenticatedAppConfiguracoesRoute: AuthenticatedAppConfiguracoesRoute,
+  AuthenticatedAppDespesasRoute: AuthenticatedAppDespesasRoute,
+  AuthenticatedAppManutencoesRoute: AuthenticatedAppManutencoesRoute,
+  AuthenticatedAppNotificacoesRoute: AuthenticatedAppNotificacoesRoute,
+  AuthenticatedAppOnboardingRoute: AuthenticatedAppOnboardingRoute,
+  AuthenticatedAppPagamentosRoute: AuthenticatedAppPagamentosRoute,
+  AuthenticatedAppRelatoriosRoute: AuthenticatedAppRelatoriosRoute,
+  AuthenticatedAppVeiculosRoute: AuthenticatedAppVeiculosRouteWithChildren,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
-  AuthenticatedAppVeiculosIdRoute: AuthenticatedAppVeiculosIdRoute,
 }
 
 const AuthenticatedAppRouteRouteWithChildren =
@@ -292,6 +605,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface CatalogoSlugRouteChildren {
+  CatalogoSlugVeiculoIdRoute: typeof CatalogoSlugVeiculoIdRoute
+}
+
+const CatalogoSlugRouteChildren: CatalogoSlugRouteChildren = {
+  CatalogoSlugVeiculoIdRoute: CatalogoSlugVeiculoIdRoute,
+}
+
+const CatalogoSlugRouteWithChildren = CatalogoSlugRoute._addFileChildren(
+  CatalogoSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -301,7 +626,9 @@ const rootRouteChildren: RootRouteChildren = {
   PlanosRoute: PlanosRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   RecuperarSenhaRoute: RecuperarSenhaRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   TermosRoute: TermosRoute,
+  CatalogoSlugRoute: CatalogoSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
