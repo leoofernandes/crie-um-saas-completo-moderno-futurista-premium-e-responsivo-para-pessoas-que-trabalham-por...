@@ -34,7 +34,7 @@ function CatalogPage() {
   const [saving, setSaving] = useState(false);
   const [bannerPosition, setBannerPosition] = useState<number | null>(null);
 
-  const s = site.data;
+  const s = site.data as (typeof site.data & { about_title?: string | null; about_description?: string | null; city?: string | null; accent_color?: string | null }) | null;
   const position = bannerPosition ?? s?.banner_position ?? 50;
 
   function refresh() {
@@ -81,6 +81,10 @@ function CatalogPage() {
       hero_subtitle: String(f.get("hero_subtitle") ?? "").trim() || null,
       whatsapp: String(f.get("whatsapp") ?? "").trim() || null,
       instagram: String(f.get("instagram") ?? "").trim() || null,
+      city: String(f.get("city") ?? "").trim() || null,
+      about_title: String(f.get("about_title") ?? "").trim() || null,
+      about_description: String(f.get("about_description") ?? "").trim() || null,
+      accent_color: String(f.get("accent_color") ?? "").trim() || "#22c55e",
       banner_position: position,
     };
     const ok = await upsertSite(values);
@@ -236,12 +240,26 @@ function CatalogPage() {
               <Input id="slug" name="slug" defaultValue={s?.slug ?? ""} placeholder="jr-carros" />
             </div>
           </Field>
-          <Field label="Título principal" htmlFor="hero_title"><Input id="hero_title" name="hero_title" defaultValue={s?.hero_title ?? ""} placeholder="Carros de..." /></Field>
+          <Field label="Título principal" htmlFor="hero_title"><Input id="hero_title" name="hero_title" defaultValue={s?.hero_title ?? ""} placeholder="Encontre seu próximo carro" /></Field>
           <Field label="Texto secundário" htmlFor="hero_subtitle"><Input id="hero_subtitle" name="hero_subtitle" defaultValue={s?.hero_subtitle ?? ""} placeholder="Confira os veículos disponíveis" /></Field>
           <Field label="WhatsApp" htmlFor="whatsapp"><Input id="whatsapp" name="whatsapp" defaultValue={s?.whatsapp ?? ""} placeholder="5511999999999" /></Field>
           <Field label="Instagram" htmlFor="instagram"><Input id="instagram" name="instagram" defaultValue={s?.instagram ?? ""} placeholder="@seuinstagram" /></Field>
+          <Field label="Cidade/região" htmlFor="city"><Input id="city" name="city" defaultValue={s?.city ?? ""} placeholder="São Paulo, SP" /></Field>
+          <Field label="Cor de destaque" htmlFor="accent_color">
+            <div className="flex items-center gap-2">
+              <input type="color" name="accent_color" defaultValue={s?.accent_color || "#22c55e"} className="h-9 w-12 rounded-md border border-input bg-background" />
+            </div>
+          </Field>
         </div>
         <Field label="Descrição" htmlFor="description"><Textarea id="description" name="description" defaultValue={s?.description ?? ""} /></Field>
+
+        <div className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
+          <Field label="Título da seção Sobre" htmlFor="about_title"><Input id="about_title" name="about_title" defaultValue={s?.about_title ?? ""} placeholder="Aluguel de carros com praticidade" /></Field>
+          <div />
+          <div className="sm:col-span-2">
+            <Field label="Descrição da seção Sobre" htmlFor="about_description"><Textarea id="about_description" name="about_description" defaultValue={s?.about_description ?? ""} placeholder="Conte um pouco sobre o seu negócio..." /></Field>
+          </div>
+        </div>
 
         <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
       </form>
