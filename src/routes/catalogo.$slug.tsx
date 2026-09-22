@@ -6,11 +6,25 @@ import { publicSiteQuery, publicVehiclesQuery, PERIODICITY_LABEL, VEHICLE_STATUS
 import { formatCurrency } from "@/lib/format";
 
 export const Route = createFileRoute("/catalogo/$slug")({
-  head: () => ({
-    meta: [
-      { name: "robots", content: "index,follow" },
-    ],
-  }),
+  loader: async ({ params }) => {
+    const { data: site } = await supabase.from("public_sites").select("*").eq("slug", params.slug).eq("is_published", true).maybeSingle();
+    return { site };
+  },
+  head: ({ loaderData }) => {
+    const site = loaderData?.site;
+    const title = site ? `${site.display_name} — Catálogo` : "Catálogo não encontrado";
+    const description = site?.hero_subtitle || site?.description || "Confira os veículos disponíveis para aluguel.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        ...(site?.banner_url ? [{ property: "og:image", content: site.banner_url }] : []),
+        { name: "robots", content: "index,follow" },
+      ],
+    };
+  },
   component: PublicCatalogPage,
 });
 
