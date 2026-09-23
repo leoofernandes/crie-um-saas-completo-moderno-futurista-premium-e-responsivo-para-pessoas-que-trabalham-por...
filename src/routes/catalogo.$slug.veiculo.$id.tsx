@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Car, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Car, Fuel, Gauge, MessageCircle, Palette, Settings2, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,8 @@ export const Route = createFileRoute("/catalogo/$slug/veiculo/$id")({
   component: PublicVehiclePage,
 });
 
+const TRANSMISSION_LABEL: Record<string, string> = { automatico: "Automático", manual: "Manual" };
+
 function whatsappLink(number: string | null | undefined, text: string) {
   if (!number) return null;
   return `https://wa.me/${number.replace(/\D/g, "")}?text=${encodeURIComponent(text)}`;
@@ -73,9 +75,19 @@ function PublicVehiclePage() {
 
   const car = vehicle.data;
   const publicSite = site.data;
+  const accent = publicSite.accent_color || "#22c55e";
   const photos = [...car.vehicle_photos].sort((a, b) => a.position - b.position);
   const message = `Olá! Vi o ${car.brand} ${car.model} no seu catálogo e tenho interesse em alugar.`;
   const chatLink = whatsappLink(publicSite.whatsapp, message);
+
+  const specs = [
+    { icon: Calendar, label: "Ano", value: car.year ? String(car.year) : null },
+    { icon: Fuel, label: "Combustível", value: car.fuel_type ?? null },
+    { icon: Settings2, label: "Câmbio", value: car.transmission ? (TRANSMISSION_LABEL[car.transmission] ?? car.transmission) : null },
+    { icon: Gauge, label: "KM", value: car.mileage ? `${car.mileage.toLocaleString("pt-BR")} km` : null },
+    { icon: Tag, label: "Categoria", value: car.category ?? null },
+    { icon: Palette, label: "Cor", value: car.color ?? null },
+  ].filter((s) => s.value);
 
   async function submitInterest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,69 +120,92 @@ function PublicVehiclePage() {
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <div className="grid gap-8 lg:grid-cols-[1.3fr_1fr]">
           <div>
-            <div className="aspect-video w-full overflow-hidden rounded-md border border-border bg-surface">
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-border bg-surface shadow-xl">
               {photos[activePhoto] ? (
                 <img src={photos[activePhoto].url} alt={`${car.brand} ${car.model}`} className="size-full object-cover" />
               ) : (
                 <div className="grid size-full place-items-center text-muted-foreground"><Car className="size-10" /></div>
               )}
+              <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/50 to-transparent" />
             </div>
             {photos.length > 1 && (
-              <div className="mt-3 flex gap-2 overflow-x-auto">
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
                 {photos.map((p, i) => (
-                  <button key={p.id} onClick={() => setActivePhoto(i)} className={`size-16 shrink-0 overflow-hidden rounded-md border ${i === activePhoto ? "border-brand" : "border-border"}`}>
+                  <button key={p.id} onClick={() => setActivePhoto(i)} className="size-16 shrink-0 overflow-hidden rounded-md border-2 transition-colors" style={{ borderColor: i === activePhoto ? accent : "hsl(var(--border))" }}>
                     <img src={p.url} alt="" className="size-full object-cover" />
                   </button>
                 ))}
               </div>
             )}
-          </div>
 
-          <div>
-            <p className="text-sm text-brand">{car.category || "Veículo"}</p>
-            <h1 className="mt-1 font-display text-3xl font-bold">{car.brand} {car.model}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{[car.year, car.color].filter(Boolean).join(" • ")}</p>
-
-            <p className="mt-5 font-display text-2xl font-semibold text-brand">
-              {formatCurrency(car.rental_price_cents)}
-              <span className="text-sm font-normal text-muted-foreground"> / {(PERIODICITY_LABEL[car.rental_periodicity] ?? car.rental_periodicity).toLowerCase()}</span>
-            </p>
-
-            {car.description && <p className="mt-4 text-sm text-muted-foreground">{car.description}</p>}
-
-            {car.features?.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {car.features.map((feature) => (
-                  <span key={feature} className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">{feature}</span>
+            {specs.length > 0 && (
+              <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-3">
+                {specs.map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="bg-card p-4">
+                    <Icon className="size-4 text-muted-foreground" />
+                    <p className="mt-2 text-xs text-muted-foreground">{label}</p>
+                    <p className="mt-0.5 text-sm font-medium">{value}</p>
+                  </div>
                 ))}
               </div>
             )}
 
-            <div className="mt-6 space-y-2">
-              {!showForm && !sent && (
-                <Button className="w-full" onClick={() => setShowForm(true)}>Tenho interesse neste carro</Button>
+            {car.features?.length > 0 && (
+              <div className="mt-6">
+                <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">Equipamentos</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {car.features.map((feature) => (
+                    <span key={feature} className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">{feature}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {car.description && (
+              <div className="mt-6">
+                <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-muted-foreground">Descrição</h2>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{car.description}</p>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="rounded-lg border border-border bg-card p-5">
+              <p className="text-sm font-medium" style={{ color: accent }}>{car.category || "Veículo"}</p>
+              <h1 className="mt-1 font-display text-2xl font-bold sm:text-3xl">{car.brand} {car.model}</h1>
+              <p className="mt-1 text-sm text-muted-foreground">{[car.year, car.color].filter(Boolean).join(" • ")}</p>
+
+              <p className="mt-5 font-display text-3xl font-bold" style={{ color: accent }}>
+                {formatCurrency(car.rental_price_cents)}
+                <span className="text-sm font-normal text-muted-foreground"> / {(PERIODICITY_LABEL[car.rental_periodicity] ?? car.rental_periodicity).toLowerCase()}</span>
+              </p>
+
+              <div className="mt-6 space-y-2">
+                {!showForm && !sent && (
+                  <Button className="w-full" style={{ background: accent }} onClick={() => setShowForm(true)}>Tenho interesse neste carro</Button>
+                )}
+                {chatLink && (
+                  <Button asChild variant="outline" className="w-full">
+                    <a href={chatLink} target="_blank" rel="noreferrer"><MessageCircle className="size-4" /> Falar pelo WhatsApp</a>
+                  </Button>
+                )}
+              </div>
+
+              {showForm && !sent && (
+                <form onSubmit={submitInterest} className="mt-5 space-y-3 rounded-md border border-border bg-surface/50 p-4">
+                  <Input name="name" placeholder="Seu nome" required />
+                  <Input name="whatsapp" placeholder="Seu WhatsApp" required />
+                  <Textarea name="message" placeholder="Mensagem (opcional)" />
+                  <Button type="submit" className="w-full" style={{ background: accent }} disabled={sending}>{sending ? "Enviando..." : "Enviar interesse"}</Button>
+                </form>
               )}
-              {chatLink && (
-                <Button asChild variant="outline" className="w-full">
-                  <a href={chatLink} target="_blank" rel="noreferrer"><MessageCircle className="size-4" /> Falar pelo WhatsApp</a>
-                </Button>
+
+              {sent && (
+                <p className="mt-5 rounded-md border p-4 text-sm" style={{ borderColor: `${accent}66`, background: `${accent}1a`, color: accent }}>
+                  Recebemos seu interesse! O anunciante vai entrar em contato.
+                </p>
               )}
             </div>
-
-            {showForm && !sent && (
-              <form onSubmit={submitInterest} className="mt-5 space-y-3 rounded-md border border-border bg-card p-4">
-                <Input name="name" placeholder="Seu nome" required />
-                <Input name="whatsapp" placeholder="Seu WhatsApp" required />
-                <Textarea name="message" placeholder="Mensagem (opcional)" />
-                <Button type="submit" className="w-full" disabled={sending}>{sending ? "Enviando..." : "Enviar interesse"}</Button>
-              </form>
-            )}
-
-            {sent && (
-              <p className="mt-5 rounded-md border border-brand/40 bg-brand/10 p-4 text-sm text-brand">
-                Recebemos seu interesse! O anunciante vai entrar em contato.
-              </p>
-            )}
           </div>
         </div>
       </main>
