@@ -71,18 +71,18 @@ export function VehiclesPage() {
 </ListGrid></EntityPage><FormDialog open={open} onOpenChange={setOpen} title="Cadastrar carro" description="Adicione os dados principais. As fotos podem ser incluídas depois." onSubmit={submit} saving={mutation.isPending}><FormGrid><Field label="Marca" htmlFor="brand"><Input id="brand" name="brand" required /></Field><Field label="Modelo" htmlFor="model"><Input id="model" name="model" required /></Field><Field label="Ano" htmlFor="year"><Input id="year" name="year" type="number" min="1950" max="2100" /></Field><Field label="Placa" htmlFor="plate"><Input id="plate" name="plate" /></Field><Field label="Categoria" htmlFor="category"><Input id="category" name="category" placeholder="Hatch, SUV..." /></Field><Field label="Câmbio" htmlFor="transmission"><NativeSelect name="transmission" required={false} options={[["automatico","Automático"],["manual","Manual"]]} /></Field><Field label="Combustível" htmlFor="fuel_type"><NativeSelect name="fuel_type" required={false} options={[["flex","Flex"],["gasolina","Gasolina"],["etanol","Etanol"],["diesel","Diesel"],["hibrido","Híbrido"],["eletrico","Elétrico"]]} /></Field><Field label="Quilometragem" htmlFor="mileage"><Input id="mileage" name="mileage" type="number" min="0" /></Field><Field label="Valor do aluguel" htmlFor="price"><Input id="price" name="price" placeholder="0,00" /></Field><Field label="Periodicidade" htmlFor="periodicity"><NativeSelect name="periodicity" options={[["semanal","Semanal"],["quinzenal","Quinzenal"],["mensal","Mensal"],["personalizada","Personalizada"]]} /></Field><Field label="Status" htmlFor="status"><NativeSelect name="status" options={Object.entries(VEHICLE_STATUS_LABEL)} /></Field></FormGrid><Field label="Descrição" htmlFor="description"><Textarea id="description" name="description" /></Field></FormDialog></>;
 }
 
-export function CustomersPage() {
-  const query = useQuery(customersQuery);
-  const client = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Customer | null>(null);
-  const [savingEdit, setSavingEdit] = useState(false);
-  const mutation = useInsert("customers", "customers");
+export function MaintenancesPage(){
+  const query=useQuery(maintenancesQuery), cars=useQuery(vehiclesQuery);
+  const [open,setOpen]=useState(false);
+  const [editing,setEditing]=useState<any>(null);
+  const [savingEdit,setSavingEdit]=useState(false);
+  const client=useQueryClient();
+  const mutation=useInsert("maintenances","maintenances");
 
-  function submit(e: FormEvent<HTMLFormElement>) {
+  function submit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    mutation.mutate({ name: value(f,"name"), cpf: value(f,"cpf")||null, whatsapp: value(f,"whatsapp")||null, email: value(f,"email")||null, address: value(f,"address")||null, notes: value(f,"notes")||null }, { onSuccess: () => setOpen(false) });
+    const f=new FormData(e.currentTarget);
+    mutation.mutate({vehicle_id:value(f,"vehicle_id"),type:value(f,"type"),date:value(f,"date"),mileage:value(f,"mileage")?Number(value(f,"mileage")):null,cost_cents:parseCurrencyToCents(value(f,"cost")),description:value(f,"description")||null,next_date:value(f,"next_date")||null,next_mileage:value(f,"next_mileage")?Number(value(f,"next_mileage")):null,notes:value(f,"notes")||null},{onSuccess:()=>setOpen(false)});
   }
 
   async function submitEdit(e: FormEvent<HTMLFormElement>) {
@@ -90,59 +90,73 @@ export function CustomersPage() {
     if (!editing) return;
     setSavingEdit(true);
     const f = new FormData(e.currentTarget);
-    const { error } = await supabase.from("customers").update({
-      name: value(f,"name"), cpf: value(f,"cpf")||null, whatsapp: value(f,"whatsapp")||null,
-      email: value(f,"email")||null, address: value(f,"address")||null, notes: value(f,"notes")||null,
+    const { error } = await supabase.from("maintenances").update({
+      type: value(f, "type"),
+      date: value(f, "date"),
+      mileage: value(f, "mileage") ? Number(value(f, "mileage")) : null,
+      cost_cents: parseCurrencyToCents(value(f, "cost")),
+      description: value(f, "description") || null,
+      next_date: value(f, "next_date") || null,
+      next_mileage: value(f, "next_mileage") ? Number(value(f, "next_mileage")) : null,
+      notes: value(f, "notes") || null,
     }).eq("id", editing.id);
     setSavingEdit(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Cliente atualizado.");
-    client.invalidateQueries({ queryKey: ["customers"] });
+    toast.success("Manutenção atualizada.");
+    client.invalidateQueries({ queryKey: ["maintenances"] });
     setEditing(null);
   }
 
-  async function removeCustomer() {
+  async function removeMaintenance() {
     if (!editing) return;
-    const { error } = await supabase.from("customers").delete().eq("id", editing.id);
+    const { error } = await supabase.from("maintenances").delete().eq("id", editing.id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Cliente excluído.");
-    client.invalidateQueries({ queryKey: ["customers"] });
+    toast.success("Manutenção excluída.");
+    client.invalidateQueries({ queryKey: ["maintenances"] });
     setEditing(null);
   }
 
-  const rows = query.data ?? [];
+  const rows=query.data??[];
   return <>
-    <EntityPage title="Seus clientes" description="Contatos e informações essenciais, sem exigir CNPJ." actionLabel="Adicionar cliente" onAction={() => setOpen(true)} icon={Users} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum cliente cadastrado" emptyText="Adicione um cliente para criar seu primeiro aluguel.">
-      <ListGrid>{rows.map((c) => (
-        <button key={c.id} type="button" onClick={() => setEditing(c)} className="block w-full text-left">
-          <RecordCard title={c.name} subtitle={c.whatsapp || c.email}>
-            <p>{c.cpf ? `CPF ${c.cpf}` : "CPF não informado"}</p>
-            <p>{c.address || "Endereço não informado"}</p>
+    <EntityPage title="Manutenções" description="Histórico de serviços e próximos cuidados com seus carros." actionLabel="Nova manutenção" onAction={()=>setOpen(true)} icon={Wrench} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhuma manutenção registrada" emptyText="Registre serviços e programe o próximo cuidado.">
+      <ListGrid>{rows.map(m=>(
+        <button key={m.id} type="button" onClick={() => setEditing(m)} className="block w-full text-left">
+          <RecordCard title={m.type} subtitle={m.vehicles&&`${m.vehicles.brand} ${m.vehicles.model}`}>
+            <p>{formatDate(m.date)} • {formatCurrency(m.cost_cents)}</p>
+            {m.next_date&&<p>Próxima em {formatDate(m.next_date)}</p>}
           </RecordCard>
         </button>
       ))}</ListGrid>
     </EntityPage>
 
-    <FormDialog open={open} onOpenChange={setOpen} title="Adicionar cliente" description="Você não precisa informar CNPJ." onSubmit={submit} saving={mutation.isPending}>
-      <FormGrid><Field label="Nome" htmlFor="name"><Input id="name" name="name" required /></Field><Field label="CPF" htmlFor="cpf"><Input id="cpf" name="cpf" /></Field><Field label="WhatsApp" htmlFor="whatsapp"><Input id="whatsapp" name="whatsapp" /></Field><Field label="E-mail" htmlFor="email"><Input id="email" name="email" type="email" /></Field></FormGrid>
-      <Field label="Endereço" htmlFor="address"><Input id="address" name="address" /></Field>
-      <Field label="Observações" htmlFor="notes"><Textarea id="notes" name="notes" /></Field>
+    <FormDialog open={open} onOpenChange={setOpen} title="Nova manutenção" description="Registre o serviço e, se quiser, a próxima data." onSubmit={submit} saving={mutation.isPending}>
+      <Field label="Carro" htmlFor="vehicle_id"><RelationSelect name="vehicle_id" placeholder="Selecione" options={(cars.data??[]).map(c=>({id:c.id,label:`${c.brand} ${c.model}`}))}/></Field>
+      <FormGrid>
+        <Field label="Tipo" htmlFor="type"><NativeSelect name="type" options={["Óleo","Pneus","Freios","Bateria","Revisão","Mecânica","Elétrica","Lavagem","Outros"].map(v=>[v,v] as [string,string])}/></Field>
+        <Field label="Data" htmlFor="date"><Input name="date" id="date" type="date" required /></Field>
+        <Field label="Quilometragem" htmlFor="mileage"><Input name="mileage" id="mileage" type="number" /></Field>
+        <Field label="Valor" htmlFor="cost"><Input name="cost" id="cost" /></Field>
+        <Field label="Próxima data" htmlFor="next_date"><Input name="next_date" id="next_date" type="date" /></Field>
+        <Field label="Próxima quilometragem" htmlFor="next_mileage"><Input name="next_mileage" id="next_mileage" type="number" /></Field>
+      </FormGrid>
+      <Field label="Descrição" htmlFor="description"><Textarea name="description" id="description" /></Field>
     </FormDialog>
 
-    <FormDialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)} title="Editar cliente" description="Atualize os dados ou remova o cliente." onSubmit={submitEdit} saving={savingEdit}>
+    <FormDialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)} title="Editar manutenção" description="Atualize os dados ou remova o registro." onSubmit={submitEdit} saving={savingEdit}>
       {editing && <>
         <FormGrid>
-          <Field label="Nome" htmlFor="edit_name"><Input id="edit_name" name="name" defaultValue={editing.name} required /></Field>
-          <Field label="CPF" htmlFor="edit_cpf"><Input id="edit_cpf" name="cpf" defaultValue={editing.cpf ?? ""} /></Field>
-          <Field label="WhatsApp" htmlFor="edit_whatsapp"><Input id="edit_whatsapp" name="whatsapp" defaultValue={editing.whatsapp ?? ""} /></Field>
-          <Field label="E-mail" htmlFor="edit_email"><Input id="edit_email" name="email" type="email" defaultValue={editing.email ?? ""} /></Field>
+          <Field label="Tipo" htmlFor="edit_type"><NativeSelect name="type" defaultValue={editing.type} options={["Óleo","Pneus","Freios","Bateria","Revisão","Mecânica","Elétrica","Lavagem","Outros"].map(v=>[v,v] as [string,string])}/></Field>
+          <Field label="Data" htmlFor="edit_date"><Input name="date" id="edit_date" type="date" defaultValue={editing.date} required /></Field>
+          <Field label="Quilometragem" htmlFor="edit_mileage"><Input name="mileage" id="edit_mileage" type="number" defaultValue={editing.mileage ?? ""} /></Field>
+          <Field label="Valor" htmlFor="edit_cost"><Input name="cost" id="edit_cost" defaultValue={(editing.cost_cents/100).toFixed(2)} /></Field>
+          <Field label="Próxima data" htmlFor="edit_next_date"><Input name="next_date" id="edit_next_date" type="date" defaultValue={editing.next_date ?? ""} /></Field>
+          <Field label="Próxima quilometragem" htmlFor="edit_next_mileage"><Input name="next_mileage" id="edit_next_mileage" type="number" defaultValue={editing.next_mileage ?? ""} /></Field>
         </FormGrid>
-        <Field label="Endereço" htmlFor="edit_address"><Input id="edit_address" name="address" defaultValue={editing.address ?? ""} /></Field>
-        <Field label="Observações" htmlFor="edit_notes"><Textarea id="edit_notes" name="notes" defaultValue={editing.notes ?? ""} /></Field>
-        <button type="button" className="text-sm text-destructive hover:underline" onClick={removeCustomer}>Excluir cliente</button>
+        <Field label="Descrição" htmlFor="edit_description"><Textarea name="description" id="edit_description" defaultValue={editing.description ?? ""} /></Field>
+        <button type="button" className="text-sm text-destructive hover:underline" onClick={removeMaintenance}>Excluir manutenção</button>
       </>}
     </FormDialog>
-  </>;
+  </>
 }
 
 function NativeSelect({name,options,required=true,defaultValue}:{name:string;options:[string,string][];required?:boolean;defaultValue?:string}) { return <select name={name} required={required} defaultValue={defaultValue} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">{options.map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>; }
