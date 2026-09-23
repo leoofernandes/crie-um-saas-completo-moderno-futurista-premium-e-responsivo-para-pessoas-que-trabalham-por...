@@ -7,11 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/_authenticated/app/configuracoes")({ component: SettingsPage });
 
 function SettingsPage() {
-  const p = useQuery(profileQuery), s = useQuery(settingsQuery), client = useQueryClient();
+  const p = useQuery(profileQuery);
+  const s = useQuery(settingsQuery);
+  const client = useQueryClient();
   const [name, setName] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setStatus("");
     const { data: { user } } = await supabase.auth.getUser();
@@ -21,7 +24,10 @@ function SettingsPage() {
     setBusy(false);
     client.invalidateQueries({ queryKey: ["profile"] });
   };
-  if (p.isLoading || s.isLoading) return <main className="mx-auto max-w-2xl px-4 py-8">Carregando...</main>;
+
+  if (p.isLoading) return <main className="mx-auto max-w-2xl px-4 py-8">Carregando...</main>;
+  if (p.isError) return <main className="mx-auto max-w-2xl px-4 py-8 text-destructive">Não foi possível carregar seu perfil.</main>;
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <h1 className="font-display text-3xl font-bold">Configurações</h1>
@@ -35,7 +41,9 @@ function SettingsPage() {
         <button disabled={busy} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground">{busy ? "Salvando..." : "Salvar perfil"}</button>
         {status && <p className="text-sm text-muted-foreground">{status}</p>}
       </form>
-      <p className="mt-5 text-xs text-muted-foreground">Preferências carregadas: {Object.keys(s.data ?? {}).length} disponíveis.</p>
+      {!s.isLoading && !s.isError && (
+        <p className="mt-5 text-xs text-muted-foreground">Preferências carregadas: {Object.keys(s.data ?? {}).length} disponíveis.</p>
+      )}
     </main>
   );
 }
