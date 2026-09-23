@@ -160,9 +160,77 @@ export function MaintenancesPage(){
 }
 
 export function CustomersPage() {
-  const query = useQuery(customersQuery); const [open,setOpen]=useState(false); const mutation=useInsert("customers","customers");
-  function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);mutation.mutate({name:value(f,"name"),cpf:value(f,"cpf")||null,whatsapp:value(f,"whatsapp")||null,email:value(f,"email")||null,address:value(f,"address")||null,notes:value(f,"notes")||null},{onSuccess:()=>setOpen(false)});}
-  const rows=query.data??[]; return <><EntityPage title="Seus clientes" description="Contatos e informações essenciais, sem exigir CNPJ." actionLabel="Adicionar cliente" onAction={()=>setOpen(true)} icon={Users} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum cliente cadastrado" emptyText="Adicione um cliente para criar seu primeiro aluguel."><ListGrid>{rows.map(c=><RecordCard key={c.id} title={c.name} subtitle={c.whatsapp||c.email}><p>{c.cpf?`CPF ${c.cpf}`:"CPF não informado"}</p><p>{c.address||"Endereço não informado"}</p></RecordCard>)}</ListGrid></EntityPage><FormDialog open={open} onOpenChange={setOpen} title="Adicionar cliente" description="Você não precisa informar CNPJ." onSubmit={submit} saving={mutation.isPending}><FormGrid><Field label="Nome" htmlFor="name"><Input id="name" name="name" required /></Field><Field label="CPF" htmlFor="cpf"><Input id="cpf" name="cpf" /></Field><Field label="WhatsApp" htmlFor="whatsapp"><Input id="whatsapp" name="whatsapp" /></Field><Field label="E-mail" htmlFor="email"><Input id="email" name="email" type="email" /></Field></FormGrid><Field label="Endereço" htmlFor="address"><Input id="address" name="address" /></Field><Field label="Observações" htmlFor="notes"><Textarea id="notes" name="notes" /></Field></FormDialog></>;
+  const query = useQuery(customersQuery);
+  const client = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Customer | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const mutation = useInsert("customers", "customers");
+
+  function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    mutation.mutate({ name: value(f,"name"), cpf: value(f,"cpf")||null, whatsapp: value(f,"whatsapp")||null, email: value(f,"email")||null, address: value(f,"address")||null, notes: value(f,"notes")||null }, { onSuccess: () => setOpen(false) });
+  }
+
+  async function submitEdit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editing) return;
+    setSavingEdit(true);
+    const f = new FormData(e.currentTarget);
+    const { error } = await supabase.from("customers").update({
+      name: value(f,"name"), cpf: value(f,"cpf")||null, whatsapp: value(f,"whatsapp")||null,
+      email: value(f,"email")||null, address: value(f,"address")||null, notes: value(f,"notes")||null,
+    }).eq("id", editing.id);
+    setSavingEdit(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cliente atualizado.");
+    client.invalidateQueries({ queryKey: ["customers"] });
+    setEditing(null);
+  }
+
+  async function removeCustomer() {
+    if (!editing) return;
+    const { error } = await supabase.from("customers").delete().eq("id", editing.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Cliente excluído.");
+    client.invalidateQueries({ queryKey: ["customers"] });
+    setEditing(null);
+  }
+
+  const rows = query.data ?? [];
+  return <>
+    <EntityPage title="Seus clientes" description="Contatos e informações essenciais, sem exigir CNPJ." actionLabel="Adicionar cliente" onAction={() => setOpen(true)} icon={Users} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum cliente cadastrado" emptyText="Adicione um cliente para criar seu primeiro aluguel.">
+      <ListGrid>{rows.map((c) => (
+        <button key={c.id} type="button" onClick={() => setEditing(c)} className="block w-full text-left">
+          <RecordCard title={c.name} subtitle={c.whatsapp || c.email}>
+            <p>{c.cpf ? `CPF ${c.cpf}` : "CPF não informado"}</p>
+            <p>{c.address || "Endereço não informado"}</p>
+          </RecordCard>
+        </button>
+      ))}</ListGrid>
+    </EntityPage>
+
+    <FormDialog open={open} onOpenChange={setOpen} title="Adicionar cliente" description="Você não precisa informar CNPJ." onSubmit={submit} saving={mutation.isPending}>
+      <FormGrid><Field label="Nome" htmlFor="name"><Input id="name" name="name" required /></Field><Field label="CPF" htmlFor="cpf"><Input id="cpf" name="cpf" /></Field><Field label="WhatsApp" htmlFor="whatsapp"><Input id="whatsapp" name="whatsapp" /></Field><Field label="E-mail" htmlFor="email"><Input id="email" name="email" type="email" /></Field></FormGrid>
+      <Field label="Endereço" htmlFor="address"><Input id="address" name="address" /></Field>
+      <Field label="Observações" htmlFor="notes"><Textarea id="notes" name="notes" /></Field>
+    </FormDialog>
+
+    <FormDialog open={!!editing} onOpenChange={(v) => !v && setEditing(null)} title="Editar cliente" description="Atualize os dados ou remova o cliente." onSubmit={submitEdit} saving={savingEdit}>
+      {editing && <>
+        <FormGrid>
+          <Field label="Nome" htmlFor="edit_name"><Input id="edit_name" name="name" defaultValue={editing.name} required /></Field>
+          <Field label="CPF" htmlFor="edit_cpf"><Input id="edit_cpf" name="cpf" defaultValue={editing.cpf ?? ""} /></Field>
+          <Field label="WhatsApp" htmlFor="edit_whatsapp"><Input id="edit_whatsapp" name="whatsapp" defaultValue={editing.whatsapp ?? ""} /></Field>
+          <Field label="E-mail" htmlFor="edit_email"><Input id="edit_email" name="email" type="email" defaultValue={editing.email ?? ""} /></Field>
+        </FormGrid>
+        <Field label="Endereço" htmlFor="edit_address"><Input id="edit_address" name="address" defaultValue={editing.address ?? ""} /></Field>
+        <Field label="Observações" htmlFor="edit_notes"><Textarea id="edit_notes" name="notes" defaultValue={editing.notes ?? ""} /></Field>
+        <button type="button" className="text-sm text-destructive hover:underline" onClick={removeCustomer}>Excluir cliente</button>
+      </>}
+    </FormDialog>
+  </>;
 }
 
 function NativeSelect({name,options,required=true,defaultValue}:{name:string;options:[string,string][];required?:boolean;defaultValue?:string}) { return <select name={name} required={required} defaultValue={defaultValue} className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">{options.map(([v,l])=><option value={v} key={v}>{l}</option>)}</select>; }
