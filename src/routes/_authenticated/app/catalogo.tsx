@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/app/Field";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { resizeImageToBlob } from "@/lib/image";
 import { leadsQuery, siteQuery } from "@/lib/queries";
 
@@ -41,7 +42,7 @@ function CatalogPage() {
     client.invalidateQueries({ queryKey: ["public_site"] });
   }
 
-  async function upsertSite(values: Record<string, unknown>) {
+  async function upsertSite(values: Database["public"]["Tables"]["public_sites"]["Update"]) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Sessão expirada."); return false; }
 
@@ -49,14 +50,14 @@ function CatalogPage() {
       const { error } = await supabase.from("public_sites").update(values).eq("id", s.id);
       if (error) { toast.error(error.code === "23505" ? "Esse link já está em uso, escolha outro." : error.message); return false; }
     } else {
-      const insertValues: Record<string, unknown> = {
+      const insertValues: Database["public"]["Tables"]["public_sites"]["Insert"] = {
         user_id: user.id,
         is_published: false,
+        slug: values.slug ?? user.id,
         ...values,
       };
-      if (!insertValues.slug) insertValues.slug = user.id;
       if (!insertValues.display_name) insertValues.display_name = "Meu catálogo";
-      const { error } = await supabase.from("public_sites").insert(insertValues as never);
+      const { error } = await supabase.from("public_sites").insert(insertValues);
       if (error) { toast.error(error.code === "23505" ? "Esse link já está em uso, escolha outro." : error.message); return false; }
     }
     refresh();
@@ -73,9 +74,10 @@ function CatalogPage() {
     setSaving(true);
     const f = new FormData(event.currentTarget);
     const rawSlug = String(f.get("slug") ?? "").trim();
-    const values = {
+    const normalizedSlug = slugify(rawSlug);
+    const values: Database["public"]["Tables"]["public_sites"]["Update"] = {
       display_name: String(f.get("display_name") ?? "").trim() || "Meu catálogo",
-      slug: slugify(rawSlug) || undefined,
+      ...(normalizedSlug ? { slug: normalizedSlug } : {}),
       description: String(f.get("description") ?? "").trim() || null,
       hero_title: String(f.get("hero_title") ?? "").trim() || null,
       hero_subtitle: String(f.get("hero_subtitle") ?? "").trim() || null,
@@ -179,7 +181,7 @@ function CatalogPage() {
               </a>
             </Button>
             {typeof navigator !== "undefined" && "share" in navigator && (
-              <Button type="button" variant="outline" size="sm" onClick={() => navigator.share({ title: s?.display_name, url: publicUrl! })}>
+              <Button type="button" variant="outline" size="sm" onClick={() => navigator.share({ title: s?.display_name ?? "Meu catálogo", url: publicUrl! })}>
                 <Share2 className="size-4" /> Compartilhar
               </Button>
             )}
@@ -277,7 +279,8 @@ function CatalogPage() {
                 <select
                   defaultValue={lead.status}
                   onChange={async (e) => {
-                    const { error } = await supabase.from("site_leads").update({ status: e.target.value }).eq("id", lead.id);
+                    const status = e.target.value as Database["public"]["Enums"]["lead_status"];
+                    const { error } = await supabase.from("site_leads").update({ status }).eq("id", lead.id);
                     if (error) { toast.error(error.message); return; }
                     toast.success("Status atualizado.");
                     client.invalidateQueries({ queryKey: ["leads"] });

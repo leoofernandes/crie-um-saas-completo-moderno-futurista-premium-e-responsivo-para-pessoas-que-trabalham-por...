@@ -16,6 +16,7 @@ import { formatCurrency, formatDate, parseCurrencyToCents } from "@/lib/format";
 import { customersQuery, expensesQuery, maintenancesQuery, paymentsQuery, PERIODICITY_LABEL, rentalsQuery, subscriptionQuery, VEHICLE_STATUS_LABEL, vehiclesQuery, type Customer, type Rental } from "@/lib/queries";
 
 type Table = keyof Database["public"]["Tables"];
+type RentalWithRelations = Rental & { vehicles: Database["public"]["Tables"]["vehicles"]["Row"] | null; customers: Customer | null };
 
 function useInsert(table: Table, queryKey: string, after?: () => Promise<void> | void) {
   const client = useQueryClient();
@@ -30,7 +31,7 @@ function useInsert(table: Table, queryKey: string, after?: () => Promise<void> |
 
 function FormGrid({ children }: { children: React.ReactNode }) { return <div className="grid gap-4 sm:grid-cols-2">{children}</div>; }
 function ListGrid({ children }: { children: React.ReactNode }) { return <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>; }
-function RecordCard({ title, subtitle, badge, children }: { title: string; subtitle?: string | null; badge?: string; children: React.ReactNode }) { return <article className="min-h-40 rounded-md border border-border bg-card p-5 transition-colors hover:border-brand/40"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="truncate font-display font-semibold">{title}</h2>{subtitle && <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>}</div>{badge && <Badge variant="outline">{badge}</Badge>}</div><div className="mt-5 space-y-2 text-sm text-muted-foreground">{children}</div></article>; }
+function RecordCard({ title, subtitle, badge, children }: { title: string; subtitle?: string | null | undefined; badge?: string | undefined; children: React.ReactNode }) { return <article className="min-h-40 rounded-md border border-border bg-card p-5 transition-colors hover:border-brand/40"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><h2 className="truncate font-display font-semibold">{title}</h2>{subtitle && <p className="mt-1 truncate text-xs text-muted-foreground">{subtitle}</p>}</div>{badge && <Badge variant="outline">{badge}</Badge>}</div><div className="mt-5 space-y-2 text-sm text-muted-foreground">{children}</div></article>; }
 function value(form: FormData, key: string) { return String(form.get(key) ?? "").trim(); }
 
 export function VehiclesPage() {
@@ -61,7 +62,7 @@ export function VehiclesPage() {
   {rows.map((car) => (
     <Link key={car.id} to="/app/veiculos/$id" params={{ id: car.id }} className="block">
       <RecordCard title={`${car.brand} ${car.model}`} subtitle={[car.year, car.plate].filter(Boolean).join(" • ")} badge={VEHICLE_STATUS_LABEL[car.status]}>
-        <p>{formatCurrency(car.rental_price_cents)} / {PERIODICITY_LABEL[car.rental_periodicity].toLowerCase()}</p>
+        <p>{formatCurrency(car.rental_price_cents)} / {(PERIODICITY_LABEL[car.rental_periodicity] ?? car.rental_periodicity).toLowerCase()}</p>
         <p>{car.mileage ? `${car.mileage.toLocaleString("pt-BR")} km` : "Quilometragem não informada"}</p>
         <p>{car.vehicle_photos.length}/10 fotos</p>
       </RecordCard>
@@ -150,7 +151,7 @@ function RelationSelect({name,options,placeholder}:{name:string;options:{id:stri
 export function RentalsPage(){
  const query=useQuery(rentalsQuery), cars=useQuery(vehiclesQuery), customers=useQuery(customersQuery);
  const [open,setOpen]=useState(false);
- const [editing,setEditing]=useState<Rental | null>(null);
+ const [editing,setEditing]=useState<RentalWithRelations | null>(null);
  const [savingEdit,setSavingEdit]=useState(false);
  const client=useQueryClient();
  const mutation=useInsert("rentals","rentals",async()=>{await client.invalidateQueries({queryKey:["vehicles"]});});
@@ -162,11 +163,11 @@ export function RentalsPage(){
    if (!editing) return;
    setSavingEdit(true);
    const f = new FormData(e.currentTarget);
-   const newStatus = value(f, "status");
+    const newStatus = value(f, "status") as Database["public"]["Enums"]["rental_status"];
    const { error } = await supabase.from("rentals").update({
      end_date: value(f, "end_date") || null,
      amount_cents: parseCurrencyToCents(value(f, "amount")),
-     periodicity: value(f, "periodicity"),
+      periodicity: value(f, "periodicity") as Database["public"]["Enums"]["rental_periodicity"],
      payment_day: value(f, "payment_day") ? Number(value(f, "payment_day")) : null,
      status: newStatus,
      notes: value(f, "notes") || null,
@@ -182,7 +183,7 @@ export function RentalsPage(){
    setEditing(null);
  }
 
- const rows=query.data??[], available=(cars.data??[]).filter(c=>c.status==="disponivel"||c.status==="reservado");
+ const rows=(query.data??[]) as RentalWithRelations[], available=(cars.data??[]).filter(c=>c.status==="disponivel"||c.status==="reservado");
  return <>
    <EntityPage title="Seus aluguéis" description="Acompanhe quem está com cada carro, valores e vencimentos." actionLabel="Novo aluguel" onAction={()=>setOpen(true)} icon={Contact} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum aluguel ativo" emptyText="Selecione um cliente e um carro disponível para começar.">
      <ListGrid>{rows.map(r=>(

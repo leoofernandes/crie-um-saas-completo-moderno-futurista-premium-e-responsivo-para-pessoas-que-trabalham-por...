@@ -72,17 +72,18 @@ function PublicVehiclePage() {
   }
 
   const car = vehicle.data;
+  const publicSite = site.data;
   const photos = [...car.vehicle_photos].sort((a, b) => a.position - b.position);
   const message = `Olá! Vi o ${car.brand} ${car.model} no seu catálogo e tenho interesse em alugar.`;
-  const chatLink = whatsappLink(site.data.whatsapp, message);
+  const chatLink = whatsappLink(publicSite.whatsapp, message);
 
   async function submitInterest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSending(true);
     const form = new FormData(event.currentTarget);
     const { error } = await supabase.from("site_leads").insert({
-      user_id: site.data!.user_id,
-      site_id: site.data!.id,
+      user_id: publicSite.user_id,
+      site_id: publicSite.id,
       vehicle_id: car.id,
       name: String(form.get("name") ?? "").trim(),
       whatsapp: String(form.get("whatsapp") ?? "").trim(),
@@ -99,7 +100,7 @@ function PublicVehiclePage() {
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 px-4 py-4 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link to="/catalogo/$slug" params={{ slug }} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4" /> {site.data.display_name}
+            <ArrowLeft className="size-4" /> {publicSite.display_name}
           </Link>
         </div>
       </header>
@@ -132,7 +133,7 @@ function PublicVehiclePage() {
 
             <p className="mt-5 font-display text-2xl font-semibold text-brand">
               {formatCurrency(car.rental_price_cents)}
-              <span className="text-sm font-normal text-muted-foreground"> / {PERIODICITY_LABEL[car.rental_periodicity].toLowerCase()}</span>
+              <span className="text-sm font-normal text-muted-foreground"> / {(PERIODICITY_LABEL[car.rental_periodicity] ?? car.rental_periodicity).toLowerCase()}</span>
             </p>
 
             {car.description && <p className="mt-4 text-sm text-muted-foreground">{car.description}</p>}
