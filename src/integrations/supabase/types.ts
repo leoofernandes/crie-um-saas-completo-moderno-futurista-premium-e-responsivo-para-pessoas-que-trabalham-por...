@@ -381,8 +381,12 @@ export type Database = {
       }
       public_sites: {
         Row: {
+          about_description: string | null
+          about_title: string | null
+          accent_color: string
           banner_position: number
           banner_url: string | null
+          city: string | null
           created_at: string
           description: string | null
           display_name: string
@@ -398,8 +402,12 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          about_description?: string | null
+          about_title?: string | null
+          accent_color?: string
           banner_position?: number
           banner_url?: string | null
+          city?: string | null
           created_at?: string
           description?: string | null
           display_name?: string
@@ -415,8 +423,12 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          about_description?: string | null
+          about_title?: string | null
+          accent_color?: string
           banner_position?: number
           banner_url?: string | null
+          city?: string | null
           created_at?: string
           description?: string | null
           display_name?: string
@@ -674,11 +686,13 @@ export type Database = {
       vehicles: {
         Row: {
           brand: string
+          catalog_order: number
           category: string | null
           color: string | null
           created_at: string
           description: string | null
           features: string[]
+          fuel_type: string | null
           id: string
           mileage: number | null
           model: string
@@ -687,17 +701,20 @@ export type Database = {
           rental_price_cents: number
           show_in_catalog: boolean
           status: Database["public"]["Enums"]["vehicle_status"]
+          transmission: string | null
           updated_at: string
           user_id: string
           year: number | null
         }
         Insert: {
           brand: string
+          catalog_order?: number
           category?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
           features?: string[]
+          fuel_type?: string | null
           id?: string
           mileage?: number | null
           model: string
@@ -706,17 +723,20 @@ export type Database = {
           rental_price_cents?: number
           show_in_catalog?: boolean
           status?: Database["public"]["Enums"]["vehicle_status"]
+          transmission?: string | null
           updated_at?: string
           user_id: string
           year?: number | null
         }
         Update: {
           brand?: string
+          catalog_order?: number
           category?: string | null
           color?: string | null
           created_at?: string
           description?: string | null
           features?: string[]
+          fuel_type?: string | null
           id?: string
           mileage?: number | null
           model?: string
@@ -725,6 +745,7 @@ export type Database = {
           rental_price_cents?: number
           show_in_catalog?: boolean
           status?: Database["public"]["Enums"]["vehicle_status"]
+          transmission?: string | null
           updated_at?: string
           user_id?: string
           year?: number | null
@@ -736,6 +757,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_daily_notifications: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
