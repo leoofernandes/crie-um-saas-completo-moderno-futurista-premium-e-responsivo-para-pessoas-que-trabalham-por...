@@ -53,9 +53,9 @@ function CatalogPage() {
       const insertValues: Database["public"]["Tables"]["public_sites"]["Insert"] = {
         user_id: user.id,
         is_published: false,
+        slug: values.slug ?? user.id,
         ...values,
       };
-      if (!insertValues.slug) insertValues.slug = user.id;
       if (!insertValues.display_name) insertValues.display_name = "Meu catálogo";
       const { error } = await supabase.from("public_sites").insert(insertValues);
       if (error) { toast.error(error.code === "23505" ? "Esse link já está em uso, escolha outro." : error.message); return false; }
@@ -74,9 +74,10 @@ function CatalogPage() {
     setSaving(true);
     const f = new FormData(event.currentTarget);
     const rawSlug = String(f.get("slug") ?? "").trim();
-    const values = {
+    const normalizedSlug = slugify(rawSlug);
+    const values: Database["public"]["Tables"]["public_sites"]["Update"] = {
       display_name: String(f.get("display_name") ?? "").trim() || "Meu catálogo",
-      slug: slugify(rawSlug) || undefined,
+      ...(normalizedSlug ? { slug: normalizedSlug } : {}),
       description: String(f.get("description") ?? "").trim() || null,
       hero_title: String(f.get("hero_title") ?? "").trim() || null,
       hero_subtitle: String(f.get("hero_subtitle") ?? "").trim() || null,

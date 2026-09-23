@@ -16,6 +16,7 @@ import { formatCurrency, formatDate, parseCurrencyToCents } from "@/lib/format";
 import { customersQuery, expensesQuery, maintenancesQuery, paymentsQuery, PERIODICITY_LABEL, rentalsQuery, subscriptionQuery, VEHICLE_STATUS_LABEL, vehiclesQuery, type Customer, type Rental } from "@/lib/queries";
 
 type Table = keyof Database["public"]["Tables"];
+type RentalWithRelations = Rental & { vehicles: Database["public"]["Tables"]["vehicles"]["Row"] | null; customers: Customer | null };
 
 function useInsert(table: Table, queryKey: string, after?: () => Promise<void> | void) {
   const client = useQueryClient();
@@ -150,7 +151,7 @@ function RelationSelect({name,options,placeholder}:{name:string;options:{id:stri
 export function RentalsPage(){
  const query=useQuery(rentalsQuery), cars=useQuery(vehiclesQuery), customers=useQuery(customersQuery);
  const [open,setOpen]=useState(false);
- const [editing,setEditing]=useState<Rental | null>(null);
+ const [editing,setEditing]=useState<RentalWithRelations | null>(null);
  const [savingEdit,setSavingEdit]=useState(false);
  const client=useQueryClient();
  const mutation=useInsert("rentals","rentals",async()=>{await client.invalidateQueries({queryKey:["vehicles"]});});
@@ -182,7 +183,7 @@ export function RentalsPage(){
    setEditing(null);
  }
 
- const rows=(query.data??[]) as (Rental & { vehicles: Database["public"]["Tables"]["vehicles"]["Row"] | null; customers: Customer | null })[], available=(cars.data??[]).filter(c=>c.status==="disponivel"||c.status==="reservado");
+ const rows=(query.data??[]) as RentalWithRelations[], available=(cars.data??[]).filter(c=>c.status==="disponivel"||c.status==="reservado");
  return <>
    <EntityPage title="Seus aluguéis" description="Acompanhe quem está com cada carro, valores e vencimentos." actionLabel="Novo aluguel" onAction={()=>setOpen(true)} icon={Contact} loading={query.isLoading} error={query.error} empty={!rows.length} emptyTitle="Nenhum aluguel ativo" emptyText="Selecione um cliente e um carro disponível para começar.">
      <ListGrid>{rows.map(r=>(
