@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Car, Instagram, Menu, MessageCircle, X } from "lucide-react";
-import { publicSiteQuery, publicVehiclesQuery, PERIODICITY_LABEL, VEHICLE_STATUS_LABEL } from "@/lib/queries";
+import { publicSiteQuery, publicVehiclesQuery, PERIODICITY_LABEL, VEHICLE_STATUS_LABEL, type PublicSite } from "@/lib/queries";
 import { formatCurrency } from "@/lib/format";
 
 export const Route = createFileRoute("/catalogo/$slug")({
@@ -12,16 +12,16 @@ export const Route = createFileRoute("/catalogo/$slug")({
     return { site };
   },
   head: ({ loaderData }) => {
-    const site = loaderData?.site as Record<string, unknown> | null | undefined;
+    const site = loaderData?.site as PublicSite | null | undefined;
     const title = site ? `${site.display_name} — Catálogo` : "Catálogo não encontrado";
-    const description = (site?.hero_subtitle as string) || (site?.description as string) || "Confira os veículos disponíveis para aluguel.";
+    const description = site?.hero_subtitle || site?.description || "Confira os veículos disponíveis para aluguel.";
     return {
       meta: [
         { title },
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        ...(site?.banner_url ? [{ property: "og:image", content: site.banner_url as string }] : []),
+        ...(site?.banner_url ? [{ property: "og:image", content: site.banner_url }] : []),
         { name: "robots", content: "index,follow" },
       ],
     };
@@ -203,7 +203,7 @@ function PublicCatalogPage() {
                     <div className="mt-3 flex items-center justify-between">
                       <p className="font-display font-semibold" style={{ color: accent }}>
                         {formatCurrency(car.rental_price_cents)}
-                        <span className="text-xs font-normal text-muted-foreground"> / {PERIODICITY_LABEL[car.rental_periodicity].toLowerCase()}</span>
+                        <span className="text-xs font-normal text-muted-foreground"> / {(PERIODICITY_LABEL[car.rental_periodicity] ?? car.rental_periodicity).toLowerCase()}</span>
                       </p>
                       <span className="text-xs font-medium underline-offset-2 group-hover:underline">Ver detalhes</span>
                     </div>
