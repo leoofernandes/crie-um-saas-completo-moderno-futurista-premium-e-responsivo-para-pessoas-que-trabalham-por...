@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Car, Instagram, Menu, MessageCircle, X } from "lucide-react";
+import { Car, Fuel, Instagram, Menu, MessageCircle, Settings2, X } from "lucide-react";
 import { publicSiteQuery, publicVehiclesQuery, PERIODICITY_LABEL, VEHICLE_STATUS_LABEL, type PublicSite } from "@/lib/queries";
 import { formatCurrency } from "@/lib/format";
 
@@ -200,11 +200,15 @@ function PublicCatalogPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {[car.transmission && TRANSMISSION_LABEL[car.transmission], car.fuel_type].filter(Boolean).join(" • ") || car.category}
                     </p>
-                    <div className="mt-3 flex items-center justify-between">
-                      <p className="font-display font-semibold" style={{ color: accent }}>
-                        {formatCurrency(car.rental_price_cents)}
-                        <span className="text-xs font-normal text-muted-foreground"> / {(PERIODICITY_LABEL[car.rental_periodicity] ?? car.rental_periodicity).toLowerCase()}</span>
-                      </p>
+                                      <div className="p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{car.brand}</p>
+                    <p className="font-display font-semibold">{car.model} {car.year ? `· ${car.year}` : ""}</p>
+                    {(car.transmission || car.fuel_type) && (
+                      <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+                        {car.transmission && <span className="inline-flex items-center gap-1"><Settings2 className="size-3.5" /> {TRANSMISSION_LABEL[car.transmission] ?? car.transmission}</span>}
+                        {car.fuel_type && <span className="inline-flex items-center gap-1"><Fuel className="size-3.5" /> {car.fuel_type}</span>}
+                      </div>
+                    )}
                       <span className="text-xs font-medium underline-offset-2 group-hover:underline">Ver detalhes</span>
                     </div>
                   </div>
