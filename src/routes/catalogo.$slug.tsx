@@ -247,7 +247,7 @@ function PublicCatalogPage() {
 
       {/* WHATSAPP FLUTUANTE (mobile) */}
       {chatText && (
-        
+        <a
           href={chatText}
           target="_blank"
           rel="noreferrer"
