@@ -39,8 +39,11 @@ export const settingsQuery = queryOptions({
 
 export const profileQuery = queryOptions({
   queryKey: ["profile"],
+  retry: false,
   queryFn: async () => {
-    const { data, error } = await supabase.from("profiles").select("*").maybeSingle();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
     if (error) throw new Error(error.message);
     return data as Profile | null;
   },
