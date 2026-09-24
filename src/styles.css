@@ -194,3 +194,44 @@
     filter: blur(20px);
   }
 }
+
+/* ===== Catálogo público (premium dark) ===== */
+.catalog-serif {
+  font-family: "Playfair Display", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  letter-spacing: -0.01em;
+}
+
+html:has(.catalog-root) {
+  scroll-behavior: smooth;
+  scroll-padding-top: 72px;
+}
+
+.catalog-scroll {
+  scrollbar-width: none;
+}
+.catalog-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes catalog-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.catalog-rise {
+  animation: catalog-rise 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-rise {
+    animation: none;
+  }
+  html:has(.catalog-root) {
+    scroll-behavior: auto;
+  }
+}
