@@ -33,7 +33,12 @@ const groups = [
     { to: "/app/configuracoes", label: "Configurações", icon: Settings },
   ] },
 ] as const;
-const navigation = groups.flatMap((group) => group.items);
+const mobileNavigation = [
+  groups[0].items[0],
+  groups[1].items[0],
+  groups[1].items[1],
+  groups[2].items[0],
+] as const;
 
 function NavLinks({ onSelect }: { onSelect?: () => void }) {
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -98,7 +103,7 @@ export function AppShell() {
       <Outlet />
     </main>
     <nav className="fixed inset-x-0 bottom-0 z-40 grid h-16 grid-cols-5 border-t border-border bg-obsidian/95 px-2 backdrop-blur-xl lg:hidden">
-      {[navigation[0], navigation[1], navigation[2], navigation[4], { to: "/app/configuracoes", label: "Mais", icon: Menu } as const].map(({ to, label, icon: Icon }) => <Link key={label} to={to} className="flex flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-brand"><Icon className="size-4" />{label}</Link>)}
+      {[...mobileNavigation, { to: "/app/configuracoes", label: "Mais", icon: Menu } as const].map(({ to, label, icon: Icon }) => <Link key={label} to={to} className="flex flex-col items-center justify-center gap-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground data-[status=active]:text-brand"><Icon className="size-4" />{label}</Link>)}
     </nav>
   </div>;
 }
