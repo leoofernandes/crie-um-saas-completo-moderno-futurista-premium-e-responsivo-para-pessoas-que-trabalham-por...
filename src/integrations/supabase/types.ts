@@ -386,10 +386,12 @@ export type Database = {
           accent_color: string
           banner_position: number
           banner_url: string | null
+          business_hours: string | null
           city: string | null
           created_at: string
           description: string | null
           display_name: string
+          footer_text: string | null
           hero_subtitle: string | null
           hero_title: string | null
           id: string
@@ -407,10 +409,12 @@ export type Database = {
           accent_color?: string
           banner_position?: number
           banner_url?: string | null
+          business_hours?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
           display_name?: string
+          footer_text?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
@@ -428,10 +432,12 @@ export type Database = {
           accent_color?: string
           banner_position?: number
           banner_url?: string | null
+          business_hours?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
           display_name?: string
+          footer_text?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
