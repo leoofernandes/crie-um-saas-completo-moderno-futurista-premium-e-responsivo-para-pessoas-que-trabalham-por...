@@ -35,7 +35,7 @@ function CatalogPage() {
   const [saving, setSaving] = useState(false);
   const [bannerPosition, setBannerPosition] = useState<number | null>(null);
 
-  const s = site.data as (typeof site.data & { about_title?: string | null; about_description?: string | null; city?: string | null; accent_color?: string | null }) | null;
+  const s = site.data as (typeof site.data & { about_title?: string | null; about_description?: string | null; city?: string | null; accent_color?: string | null; business_hours?: string | null; footer_text?: string | null }) | null;
   const position = bannerPosition ?? s?.banner_position ?? 50;
 
   function refresh() {
@@ -86,6 +86,8 @@ function CatalogPage() {
       city: String(f.get("city") ?? "").trim() || null,
       about_title: String(f.get("about_title") ?? "").trim() || null,
       about_description: String(f.get("about_description") ?? "").trim() || null,
+      business_hours: String(f.get("business_hours") ?? "").trim() || null,
+      footer_text: String(f.get("footer_text") ?? "").trim() || null,
       accent_color: String(f.get("accent_color") ?? "").trim() || "#22c55e",
       banner_position: position,
     };
@@ -261,6 +263,11 @@ function CatalogPage() {
           <div className="sm:col-span-2">
             <Field label="Descrição da seção Sobre" htmlFor="about_description"><Textarea id="about_description" name="about_description" defaultValue={s?.about_description ?? ""} placeholder="Conte um pouco sobre o seu negócio..." /></Field>
           </div>
+        </div>
+
+        <div className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
+          <Field label="Horário de atendimento" htmlFor="business_hours"><Input id="business_hours" name="business_hours" defaultValue={s?.business_hours ?? ""} placeholder="Seg a Sáb, 8h às 18h" /></Field>
+          <Field label="Texto do rodapé" htmlFor="footer_text"><Input id="footer_text" name="footer_text" defaultValue={s?.footer_text ?? ""} placeholder="Mensagem personalizada no rodapé do catálogo" /></Field>
         </div>
 
         <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>

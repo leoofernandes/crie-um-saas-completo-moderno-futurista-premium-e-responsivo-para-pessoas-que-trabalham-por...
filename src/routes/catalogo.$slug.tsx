@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Outlet, createFileRoute, useChildMatches } from "@tanstack/react-router";
-import { ArrowDown, Car, Instagram, MapPin, Menu, MessageCircle, X } from "lucide-react";
+import { ArrowDown, Car, Clock, Instagram, MapPin, Menu, MessageCircle, X } from "lucide-react";
 import { publicSiteQuery, publicVehiclesQuery, type PublicSite } from "@/lib/queries";
 import { VehicleCard } from "@/components/catalog/VehicleCard";
 import {
@@ -139,7 +139,7 @@ function PublicCatalogPage() {
   const chat = whatsappLink(s.whatsapp, `Olá! Vi o catálogo da ${s.display_name} e quero saber mais.`);
   const handle = instagramHandle(s.instagram);
   const hasAbout = Boolean(s.about_title || s.about_description);
-  const hasContact = Boolean(s.whatsapp || handle || s.city);
+  const hasContact = Boolean(s.whatsapp || handle || s.city || s.business_hours);
 
   const navLinks = [
     { href: "#inicio", label: "Início" },
@@ -384,6 +384,9 @@ function PublicCatalogPage() {
                   {s.city && (
                     <li className="flex items-center gap-3"><MapPin className="size-4 shrink-0" /> {s.city}</li>
                   )}
+                  {s.business_hours && (
+                    <li className="flex items-center gap-3"><Clock className="size-4 shrink-0" /> {s.business_hours}</li>
+                  )}
                   {handle && (
                     <li>
                       <a href={`https://instagram.com/${handle}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 transition-colors hover:text-(--c-text)">
@@ -408,7 +411,7 @@ function PublicCatalogPage() {
         <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 sm:px-6 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="catalog-serif text-lg font-semibold">{s.display_name}</p>
-            <p className="mt-1 text-sm text-(--c-mute)">© {new Date().getFullYear()} {s.display_name}. Todos os direitos reservados.</p>
+            <p className="mt-1 text-sm text-(--c-mute)">{s.footer_text || `© ${new Date().getFullYear()} ${s.display_name}. Todos os direitos reservados.`}</p>
           </div>
           <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-(--c-mute)" aria-label="Rodapé">
             {navLinks.map((link) => (
