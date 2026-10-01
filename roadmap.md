@@ -7,5 +7,10 @@
 - [ ] Finalizar veículos e upload de até 10 fotos
 - [ ] Finalizar clientes, aluguéis, pagamentos, manutenções e despesas
 - [ ] Finalizar relatórios, notificações e configurações
-- [ ] Finalizar catálogo público, página do veículo, leads, personalização e compartilhamento
+- [ ] Concluir o módulo integrado “Meu catálogo” conforme o briefing enviado
+  - Central com Visão geral, Personalização, Veículos, Aparência, Compartilhar e Leads
+  - Preview responsivo, publicação, URL única, logo, banner, textos e contato
+  - Controle de visibilidade e ordem usando os veículos já cadastrados
+  - Site público e página do veículo com dados reais, interesse, WhatsApp e metadados sociais
+  - Segurança, estados, desempenho e validação do fluxo completo
 - [ ] Validar fluxos, segurança, estados e experiência mobile
