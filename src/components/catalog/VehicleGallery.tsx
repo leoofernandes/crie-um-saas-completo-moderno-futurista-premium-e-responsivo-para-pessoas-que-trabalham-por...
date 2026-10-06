@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Car, ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
-import type { VehiclePhoto } from "@/lib/queries";
+import type { CatalogPhoto } from "./catalog-utils";
 
-export function VehicleGallery({ photos, alt }: { photos: VehiclePhoto[]; alt: string }) {
+export function VehicleGallery({ photos, alt }: { photos: CatalogPhoto[]; alt: string }) {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const touchStart = useRef<number | null>(null);
