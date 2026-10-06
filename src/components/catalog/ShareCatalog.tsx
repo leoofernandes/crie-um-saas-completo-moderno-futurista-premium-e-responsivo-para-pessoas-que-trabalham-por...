@@ -1,0 +1,14 @@
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
+import { Copy, Download, ExternalLink, MessageCircle, QrCode, Share2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+
+export function ShareCatalog({ url, name, published }: { url: string; name: string; published: boolean }) {
+  const [qr, setQr] = useState("");
+  const [error, setError] = useState(false);
+  useEffect(() => { setQr(""); setError(false); if (!published) return; let alive = true; QRCode.toDataURL(url, { width: 512, margin: 3, errorCorrectionLevel: "M" }).then(value => { if (alive) setQr(value); }).catch(() => { if (alive) setError(true); }); return () => { alive = false; }; }, [url, published]);
+  async function copy() { try { await navigator.clipboard.writeText(url); toast.success("Link copiado!"); } catch { toast.error("Não foi possível copiar o link."); } }
+  if (!published) return <div className="py-10 text-center"><QrCode className="mx-auto size-10 text-muted-foreground"/><h2 className="mt-4 text-xl font-semibold">Seu catálogo está privado.</h2><p className="mt-2 text-muted-foreground">Publique o catálogo para compartilhar seu link.</p></div>;
+  return <section><h2 className="text-xl font-semibold">Compartilhar meu catálogo</h2><p className="mt-3 break-all text-sm text-brand">{url}</p><div className="mt-5 flex flex-wrap gap-3"><Button variant="outline" onClick={copy}><Copy className="size-4"/>Copiar link</Button><Button variant="outline" asChild><a href={`https://wa.me/?text=${encodeURIComponent(`Veja meus carros disponíveis: ${url}`)}`} target="_blank" rel="noreferrer"><MessageCircle className="size-4"/>Compartilhar no WhatsApp</a></Button><Button variant="outline" asChild><a href={url} target="_blank" rel="noreferrer"><ExternalLink className="size-4"/>Visualizar catálogo</a></Button>{typeof navigator !== "undefined" && "share" in navigator && <Button variant="outline" onClick={async () => { try { await navigator.share({ title: name, url }); } catch (e) { if (!(e instanceof DOMException && e.name === "AbortError")) toast.error("Não foi possível compartilhar."); } }}><Share2 className="size-4"/>Compartilhar</Button>}</div><div className="mt-8">{qr ? <><img src={qr} alt="QR Code do catálogo" width={220} height={220} className="rounded-md"/><Button className="mt-4" variant="outline" asChild><a href={qr} download="catalogo-qrcode.png"><Download className="size-4"/>Baixar QR Code</a></Button></> : <p className="text-sm text-muted-foreground">{error ? "Não foi possível gerar o QR Code." : "Gerando QR Code…"}</p>}</div></section>;
+}

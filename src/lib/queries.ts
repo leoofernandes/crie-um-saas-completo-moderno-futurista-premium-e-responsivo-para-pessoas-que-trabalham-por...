@@ -123,7 +123,9 @@ export const expensesQuery = queryOptions({
 export const siteQuery = queryOptions({
   queryKey: ["public_site"],
   queryFn: async () => {
-    const { data, error } = await supabase.from("public_sites").select("*").maybeSingle();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const { data, error } = await supabase.from("public_sites").select("*").eq("user_id", user.id).maybeSingle();
     if (error) throw new Error(error.message);
     return data as PublicSite | null;
   },

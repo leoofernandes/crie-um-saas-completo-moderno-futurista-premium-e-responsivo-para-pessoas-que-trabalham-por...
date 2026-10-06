@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { sendCatalogInterest } from "@/lib/catalog.functions";
+import { Button } from "@/components/ui/button";
 import { vehicleTitle, type CatalogVehicle } from "./catalog-utils";
 
 export function InterestDialog({
@@ -12,7 +13,6 @@ export function InterestDialog({
   onOpenChange,
   car,
   siteId,
-  ownerId,
   accent,
   onAccent,
 }: {
@@ -20,7 +20,6 @@ export function InterestDialog({
   onOpenChange: (open: boolean) => void;
   car: CatalogVehicle;
   siteId: string;
-  ownerId: string;
   accent: string;
   onAccent: string;
 }) {
@@ -57,82 +56,72 @@ export function InterestDialog({
     }
 
     setSending(true);
-    const { error: insertError } = await supabase.from("site_leads").insert({
-      user_id: ownerId,
-      site_id: siteId,
-      vehicle_id: car.id,
-      name,
-      whatsapp,
-      message: message || null,
-    });
-    setSending(false);
-
-    if (insertError) {
+    try {
+      await sendCatalogInterest({ data: { siteId, vehicleId: car.id, name, whatsapp, message, website: String(form.get("website") ?? "") } });
+      setSent(true);
+    } catch {
       setError("Não foi possível enviar agora. Tente de novo em instantes.");
       toast.error("Não foi possível enviar seu interesse.");
-      return;
-    }
-    setSent(true);
+    } finally { setSending(false); }
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md rounded-2xl border-white/10 bg-[#17181b] text-[#f3f2ee]">
+      <DialogContent className="catalog-root max-w-md rounded-lg border-(--c-line) bg-(--c-raise) text-(--c-text)" style={{ "--c-accent": accent, "--c-on-accent": onAccent } as React.CSSProperties}>
         {sent ? (
           <div className="py-6 text-center">
             <CheckCircle2 className="mx-auto size-12" style={{ color: accent }} strokeWidth={1.5} />
             <DialogTitle className="catalog-serif mt-4 text-2xl">Interesse enviado com sucesso!</DialogTitle>
-            <DialogDescription className="mt-2 text-[#9b9ca4]">
+            <DialogDescription className="mt-2 text-(--c-mute)">
               Em breve entraremos em contato pelo WhatsApp que você informou.
             </DialogDescription>
-            <button
+            <Button
               type="button"
               onClick={() => handleOpenChange(false)}
-              className="mt-6 rounded-full px-6 py-2.5 text-sm font-medium"
-              style={{ background: accent, color: onAccent }}
+              className="catalog-cta mt-6 px-6 py-2.5 text-sm font-medium"
             >
               Fechar
-            </button>
+            </Button>
           </div>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="catalog-serif text-2xl">Tenho interesse</DialogTitle>
-              <DialogDescription className="text-[#9b9ca4]">
+              <DialogDescription className="text-(--c-mute)">
                 Você está interessado em:{" "}
-                <span className="font-medium text-[#f3f2ee]">{vehicleTitle(car)}</span>
+                <span className="font-medium text-(--c-text)">{vehicleTitle(car)}</span>
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={submit} className="mt-2 space-y-4" noValidate>
+              <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
               <div>
-                <label htmlFor="interest-name" className="mb-1.5 block text-sm text-[#9b9ca4]">Nome</label>
-                <Input id="interest-name" name="name" placeholder="Seu nome" autoComplete="name" required className="h-11 border-white/10 bg-black/30" />
+                <label htmlFor="interest-name" className="mb-1.5 block text-sm text-(--c-mute)">Nome</label>
+                <Input id="interest-name" name="name" placeholder="Seu nome" autoComplete="name" maxLength={120} required className="h-11 border-(--c-line) bg-(--c-bg)" />
               </div>
               <div>
-                <label htmlFor="interest-whatsapp" className="mb-1.5 block text-sm text-[#9b9ca4]">WhatsApp</label>
-                <Input id="interest-whatsapp" name="whatsapp" type="tel" inputMode="tel" placeholder="(11) 99999-9999" autoComplete="tel" required className="h-11 border-white/10 bg-black/30" />
+                <label htmlFor="interest-whatsapp" className="mb-1.5 block text-sm text-(--c-mute)">WhatsApp</label>
+                <Input id="interest-whatsapp" name="whatsapp" type="tel" inputMode="tel" placeholder="(11) 99999-9999" autoComplete="tel" maxLength={30} required className="h-11 border-(--c-line) bg-(--c-bg)" />
               </div>
               <div>
-                <label htmlFor="interest-message" className="mb-1.5 block text-sm text-[#9b9ca4]">Mensagem (opcional)</label>
-                <Textarea id="interest-message" name="message" placeholder="Alguma dúvida ou preferência?" rows={3} className="border-white/10 bg-black/30" />
+                <label htmlFor="interest-message" className="mb-1.5 block text-sm text-(--c-mute)">Mensagem (opcional)</label>
+                <Textarea id="interest-message" name="message" placeholder="Alguma dúvida ou preferência?" rows={3} maxLength={2000} className="border-(--c-line) bg-(--c-bg)" />
               </div>
 
               {error && (
-                <p role="alert" className="text-sm text-red-400">
+                <p role="alert" className="text-sm text-destructive">
                   {error}
                 </p>
               )}
 
-              <button
+              <Button
                 type="submit"
                 disabled={sending}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold transition-opacity disabled:opacity-60"
-                style={{ background: accent, color: onAccent }}
+                className="catalog-cta flex h-12 w-full items-center justify-center gap-2 text-sm font-semibold transition-opacity disabled:opacity-60"
               >
                 {sending && <Loader2 className="size-4 animate-spin" />}
                 {sending ? "Enviando..." : "Enviar interesse"}
-              </button>
+              </Button>
             </form>
           </>
         )}
