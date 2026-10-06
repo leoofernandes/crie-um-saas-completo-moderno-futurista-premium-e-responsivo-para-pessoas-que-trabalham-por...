@@ -243,3 +243,23 @@ html:has(.catalog-root) {
     scroll-behavior: auto;
   }
 }
+
+/* Public catalog tokens remain isolated from the SaaS theme. */
+.catalog-root { --c-bg: #101113; --c-raise: #17181b; --c-raise2: #1f2024; --c-line: rgba(255,255,255,.09); --c-line-strong: rgba(255,255,255,.22); --c-text: #f5f6f7; --c-mute: #a4a8ae; --c-header: rgba(16,17,19,.94); --c-accent: #22c55e; --c-on-accent: #101113; --c-hero-text: #ffffff; --c-hero-muted: #e2e5e8; background: var(--c-bg); color: var(--c-text); font-family: var(--font-dashboard); }
+.catalog-root h1,.catalog-root h2,.catalog-root h3,.catalog-root .catalog-serif { font-family: var(--font-display); letter-spacing: 0; }
+.catalog-cta { background: var(--c-accent); color: var(--c-on-accent); border-color: transparent; }
+.catalog-cta:hover { background: var(--c-accent); filter: brightness(.93); }
+.catalog-secondary { background: var(--c-header); border-color: var(--c-line-strong); color: var(--c-hero-text); }
+.catalog-header { position: sticky; top: 0; z-index: 30; background: var(--c-header); backdrop-filter: blur(16px); }
+.catalog-hero { height: 440px; min-height: 360px; }
+.catalog-hero-overlay { background: linear-gradient(90deg,rgba(0,0,0,.78),rgba(0,0,0,.18)); }
+.catalog-hero-no-image { background: var(--c-raise); }
+.catalog-desktop-nav { display: none; }
+.catalog-mobile-menu { display: inline-flex; }
+nav.catalog-mobile-menu { display: block; }
+.catalog-vehicle-grid { grid-template-columns: repeat(1,minmax(0,1fr)); }
+.catalog-preview { container-type: inline-size; }
+@media (min-width:640px) { .catalog-vehicle-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .catalog-hero { height: 490px; } }
+@media (min-width:1024px) { .catalog-desktop-nav { display:flex; } .catalog-mobile-menu,nav.catalog-mobile-menu { display:none; } .catalog-vehicle-grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+.catalog-preview .catalog-hero { height: 420px; }
+@container (max-width: 640px) { .catalog-preview .catalog-vehicle-grid { grid-template-columns:1fr; } .catalog-preview .catalog-desktop-nav { display:none; } .catalog-preview .catalog-mobile-menu { display:inline-flex; } .catalog-preview h1 { font-size:32px; } .catalog-preview .catalog-hero { height:400px; } }

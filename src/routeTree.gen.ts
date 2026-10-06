@@ -34,6 +34,7 @@ import { Route as AuthenticatedAppOnboardingRouteImport } from './routes/_authen
 import { Route as AuthenticatedAppPagamentosRouteImport } from './routes/_authenticated/app/pagamentos'
 import { Route as AuthenticatedAppRelatoriosRouteImport } from './routes/_authenticated/app/relatorios'
 import { Route as AuthenticatedAppVeiculosRouteImport } from './routes/_authenticated/app/veiculos'
+import { Route as CatalogoSlugIndexRouteImport } from './routes/catalogo.$slug.index'
 import { Route as AuthenticatedAppVeiculosIdRouteImport } from './routes/_authenticated/app/veiculos.$id'
 import { Route as CatalogoSlugVeiculoIdRouteImport } from './routes/catalogo.$slug.veiculo.$id'
 
@@ -172,6 +173,11 @@ const AuthenticatedAppVeiculosRoute =
     path: '/veiculos',
     getParentRoute: () => AuthenticatedAppRouteRoute,
   } as any)
+const CatalogoSlugIndexRoute = CatalogoSlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CatalogoSlugRoute,
+} as any)
 const AuthenticatedAppVeiculosIdRoute =
   AuthenticatedAppVeiculosIdRouteImport.update({
     id: '/$id',
@@ -209,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
   '/app/veiculos': typeof AuthenticatedAppVeiculosRouteWithChildren
   '/app/': typeof AuthenticatedAppIndexRoute
+  '/catalogo/$slug/': typeof CatalogoSlugIndexRoute
   '/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
   '/catalogo/$slug/veiculo/$id': typeof CatalogoSlugVeiculoIdRoute
 }
@@ -222,7 +229,6 @@ export interface FileRoutesByTo {
   '/recuperar-senha': typeof RecuperarSenhaRoute
   '/redefinir-senha': typeof RedefinirSenhaRoute
   '/termos': typeof TermosRoute
-  '/catalogo/$slug': typeof CatalogoSlugRouteWithChildren
   '/app/admin': typeof AuthenticatedAppAdminRoute
   '/app/alugueis': typeof AuthenticatedAppAlugueisRoute
   '/app/catalogo': typeof AuthenticatedAppCatalogoRoute
@@ -236,6 +242,7 @@ export interface FileRoutesByTo {
   '/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
   '/app/veiculos': typeof AuthenticatedAppVeiculosRouteWithChildren
   '/app': typeof AuthenticatedAppIndexRoute
+  '/catalogo/$slug': typeof CatalogoSlugIndexRoute
   '/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
   '/catalogo/$slug/veiculo/$id': typeof CatalogoSlugVeiculoIdRoute
 }
@@ -266,6 +273,7 @@ export interface FileRoutesById {
   '/_authenticated/app/relatorios': typeof AuthenticatedAppRelatoriosRoute
   '/_authenticated/app/veiculos': typeof AuthenticatedAppVeiculosRouteWithChildren
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
+  '/catalogo/$slug/': typeof CatalogoSlugIndexRoute
   '/_authenticated/app/veiculos/$id': typeof AuthenticatedAppVeiculosIdRoute
   '/catalogo/$slug/veiculo/$id': typeof CatalogoSlugVeiculoIdRoute
 }
@@ -296,6 +304,7 @@ export interface FileRouteTypes {
     | '/app/relatorios'
     | '/app/veiculos'
     | '/app/'
+    | '/catalogo/$slug/'
     | '/app/veiculos/$id'
     | '/catalogo/$slug/veiculo/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -309,7 +318,6 @@ export interface FileRouteTypes {
     | '/recuperar-senha'
     | '/redefinir-senha'
     | '/termos'
-    | '/catalogo/$slug'
     | '/app/admin'
     | '/app/alugueis'
     | '/app/catalogo'
@@ -323,6 +331,7 @@ export interface FileRouteTypes {
     | '/app/relatorios'
     | '/app/veiculos'
     | '/app'
+    | '/catalogo/$slug'
     | '/app/veiculos/$id'
     | '/catalogo/$slug/veiculo/$id'
   id:
@@ -352,6 +361,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/relatorios'
     | '/_authenticated/app/veiculos'
     | '/_authenticated/app/'
+    | '/catalogo/$slug/'
     | '/_authenticated/app/veiculos/$id'
     | '/catalogo/$slug/veiculo/$id'
   fileRoutesById: FileRoutesById
@@ -547,6 +557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppVeiculosRouteImport
       parentRoute: typeof AuthenticatedAppRouteRoute
     }
+    '/catalogo/$slug/': {
+      id: '/catalogo/$slug/'
+      path: '/'
+      fullPath: '/catalogo/$slug/'
+      preLoaderRoute: typeof CatalogoSlugIndexRouteImport
+      parentRoute: typeof CatalogoSlugRoute
+    }
     '/_authenticated/app/veiculos/$id': {
       id: '/_authenticated/app/veiculos/$id'
       path: '/$id'
@@ -627,10 +644,12 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface CatalogoSlugRouteChildren {
+  CatalogoSlugIndexRoute: typeof CatalogoSlugIndexRoute
   CatalogoSlugVeiculoIdRoute: typeof CatalogoSlugVeiculoIdRoute
 }
 
 const CatalogoSlugRouteChildren: CatalogoSlugRouteChildren = {
+  CatalogoSlugIndexRoute: CatalogoSlugIndexRoute,
   CatalogoSlugVeiculoIdRoute: CatalogoSlugVeiculoIdRoute,
 }
 

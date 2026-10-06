@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Car, Fuel, Gauge, MessageCircle, Palette, Settings2, Tag } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { publicSiteQuery, publicVehicleQuery } from "@/lib/queries";
+import { catalogQuery } from "@/lib/catalog-queries";
+import { catalogHead } from "@/lib/catalog-head";
+import { CatalogError, CatalogNotFound } from "@/components/catalog/CatalogState";
+import { Button } from "@/components/ui/button";
+
 import { InterestDialog } from "@/components/catalog/InterestDialog";
 import { VehicleGallery } from "@/components/catalog/VehicleGallery";
 import {
@@ -20,64 +23,26 @@ import {
 } from "@/components/catalog/catalog-utils";
 
 export const Route = createFileRoute("/catalogo/$slug/veiculo/$id")({
-  loader: async ({ params }) => {
-    const [{ data: site }, { data: vehicle }] = await Promise.all([
-      supabase.from("public_sites").select("*").eq("slug", params.slug).eq("is_published", true).maybeSingle(),
-      supabase
-        .from("vehicles")
-        .select("*, vehicle_photos(*)")
-        .eq("id", params.id)
-        .eq("show_in_catalog", true)
-        .neq("status", "inativo")
-        .maybeSingle(),
-    ]);
-    return { site, vehicle };
+  loader: async ({ params, context, location }) => {
+    const data = await context.queryClient.ensureQueryData(catalogQuery(params.slug));
+    return { ...data, vehicle: data.vehicles.find(car => car.id === params.id) ?? null, origin: new URL(location.href, "https://id-preview--1dec846f-466e-46b4-bef3-01fb22e5e54d.lovable.app").origin };
   },
-  head: ({ loaderData }) => {
-    const site = loaderData?.site;
-    const vehicle = loaderData?.vehicle;
-    const title = vehicle
-      ? `${vehicle.brand} ${vehicle.model}${vehicle.year ? ` ${vehicle.year}` : ""} | ${site?.display_name ?? "Catálogo"}`
-      : "Veículo não encontrado";
-    const description =
-      vehicle?.description || `Confira o ${vehicle?.brand ?? ""} ${vehicle?.model ?? ""} disponível para aluguel.`;
-    const cover =
-      vehicle?.vehicle_photos?.find((p) => p.is_primary) ?? vehicle?.vehicle_photos?.[0];
-    return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "website" },
-        ...(cover ? [{ property: "og:image", content: cover.url }] : []),
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "robots", content: "index,follow" },
-      ],
-      links: [
-        { rel: "stylesheet", href: FONT_HREF },
-        ...(site?.logo_url ? [{ rel: "icon", href: site.logo_url }] : []),
-      ],
-    };
-  },
+  head: ({ loaderData }) => catalogHead(loaderData?.site, loaderData?.origin || "", loaderData?.vehicle ?? null),
   component: PublicVehiclePage,
+  errorComponent: CatalogError,
+  notFoundComponent: CatalogNotFound,
 });
 
 function PublicVehiclePage() {
   const { slug, id } = Route.useParams();
-  const site = useQuery(publicSiteQuery(slug));
-  const vehicle = useQuery(publicVehicleQuery(id));
+  const catalog = useSuspenseQuery(catalogQuery(slug));
+  const site = { data: catalog.data.site, isLoading: false };
+  const vehicle = { data: catalog.data.vehicles.find(car => car.id === id), isLoading: false };
   const [interestOpen, setInterestOpen] = useState(false);
-
-  useEffect(() => {
-    if (vehicle.data) {
-      document.title = `${vehicleTitle(vehicle.data)} | ${site.data?.display_name ?? "Catálogo"}`;
-    }
-  }, [vehicle.data, site.data?.display_name]);
 
   if (site.isLoading || vehicle.isLoading) {
     return (
-      <div className="catalog-root grid min-h-screen place-items-center bg-[#101113]">
+      <div className="catalog-root grid min-h-screen place-items-center bg-(--c-bg)">
         <div className="size-8 animate-spin rounded-full border-2 border-white/15 border-t-white/70" aria-label="Carregando" />
       </div>
     );
@@ -86,12 +51,12 @@ function PublicVehiclePage() {
   const publicSite = site.data;
   const car = vehicle.data;
 
-  if (!publicSite || !car || car.user_id !== publicSite.user_id) {
+  if (!publicSite || !car) {
     return (
-      <div className="catalog-root flex min-h-screen flex-col items-center justify-center bg-[#101113] px-4 text-center text-[#f3f2ee]">
-        <Car className="size-10 text-[#9b9ca4]" strokeWidth={1.25} />
+      <div className="catalog-root flex min-h-screen flex-col items-center justify-center bg-(--c-bg) px-4 text-center text-(--c-text)">
+        <Car className="size-10 text-(--c-mute)" strokeWidth={1.25} />
         <h1 className="catalog-serif mt-5 text-3xl font-semibold">Veículo não encontrado</h1>
-        <p className="mt-2 text-sm text-[#9b9ca4]">Esse carro não está mais disponível no catálogo.</p>
+        <p className="mt-2 text-sm text-(--c-mute)">Esse carro não está mais disponível no catálogo.</p>
         <Link to="/catalogo/$slug" params={{ slug }} className="mt-6 rounded-full border border-white/25 px-6 py-2.5 text-sm font-medium">
           Ver outros veículos
         </Link>
@@ -121,21 +86,9 @@ function PublicVehiclePage() {
   return (
     <div
       className="catalog-root min-h-screen bg-(--c-bg) pb-28 text-(--c-text) lg:pb-0"
-      style={
-        {
-          "--c-bg": "#101113",
-          "--c-raise": "#17181b",
-          "--c-raise2": "#1f2024",
-          "--c-line": "rgba(255,255,255,0.09)",
-          "--c-line-strong": "rgba(255,255,255,0.22)",
-          "--c-text": "#f3f2ee",
-          "--c-mute": "#9b9ca4",
-          "--c-accent": accent,
-          "--c-on-accent": onAccent,
-        } as React.CSSProperties
-      }
+      style={{ "--c-accent": accent, "--c-on-accent": onAccent } as React.CSSProperties}
     >
-      <header className="sticky top-0 z-30 border-b border-(--c-line) bg-[rgba(16,17,19,0.82)] backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-(--c-line) bg-(--c-header) backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link
             to="/catalogo/$slug"
@@ -206,7 +159,7 @@ function PublicVehiclePage() {
             {car.description && (
               <section className="mt-10">
                 <h2 className="catalog-serif text-2xl font-semibold">Descrição</h2>
-                <p className="mt-4 max-w-prose whitespace-pre-line leading-relaxed text-[#c9c9c5]">{car.description}</p>
+                <p className="mt-4 max-w-prose whitespace-pre-line leading-relaxed text-(--c-mute)">{car.description}</p>
               </section>
             )}
           </div>
@@ -229,14 +182,14 @@ function PublicVehiclePage() {
               )}
 
               <div className="mt-6 hidden space-y-3 lg:block">
-                <button
+                <Button
                   type="button"
                   onClick={() => setInterestOpen(true)}
-                  className="w-full rounded-full py-3.5 text-base font-semibold transition-transform hover:-translate-y-0.5"
-                  style={{ background: accent, color: onAccent }}
+                  className="catalog-cta h-auto w-full rounded-md py-3.5 text-base font-semibold transition-transform hover:-translate-y-0.5"
+                  
                 >
                   Tenho interesse neste veículo
-                </button>
+                </Button>
                 {chat && (
                   <a
                     href={chat}
@@ -254,7 +207,7 @@ function PublicVehiclePage() {
       </main>
 
       {/* BARRA FIXA (celular e tablet) */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-(--c-line) bg-[rgba(16,17,19,0.94)] px-4 py-3 backdrop-blur-xl lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-(--c-line) bg-(--c-header) px-4 py-3 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-2xl items-center gap-3">
           <div className="min-w-0 shrink-0">
             <p className="text-lg font-semibold leading-none">{formatPrice(car.rental_price_cents)}</p>
@@ -271,14 +224,14 @@ function PublicVehiclePage() {
               <MessageCircle className="size-5" />
             </a>
           )}
-          <button
+          <Button
             type="button"
             onClick={() => setInterestOpen(true)}
-            className="h-12 min-w-0 flex-1 rounded-full px-4 text-sm font-semibold"
-            style={{ background: accent, color: onAccent }}
+            className="catalog-cta h-12 min-w-0 flex-1 rounded-md px-4 text-sm font-semibold"
+            
           >
             Tenho interesse
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -287,7 +240,7 @@ function PublicVehiclePage() {
         onOpenChange={setInterestOpen}
         car={car}
         siteId={publicSite.id}
-        ownerId={publicSite.user_id}
+        
         accent={accent}
         onAccent={onAccent}
       />

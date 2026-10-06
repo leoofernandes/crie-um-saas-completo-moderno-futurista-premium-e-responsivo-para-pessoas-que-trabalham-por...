@@ -1,6 +1,7 @@
 import type { Vehicle, VehiclePhoto } from "@/lib/queries";
 
-export type CatalogVehicle = Vehicle & { vehicle_photos: VehiclePhoto[] };
+export type CatalogPhoto = Pick<VehiclePhoto, "id" | "url" | "is_primary" | "position">;
+export type CatalogVehicle = Pick<Vehicle, "id" | "brand" | "model" | "year" | "color" | "category" | "mileage" | "rental_price_cents" | "rental_periodicity" | "status" | "description" | "features" | "transmission" | "fuel_type" | "catalog_order" | "show_in_catalog"> & { vehicle_photos: CatalogPhoto[] };
 
 export const DEFAULT_ACCENT = "#22c55e";
 export const MAX_PHOTOS = 10;
@@ -51,7 +52,8 @@ export function whatsappLink(number: string | null | undefined, text: string): s
   if (!number) return null;
   const digits = number.replace(/\D/g, "");
   if (!digits) return null;
-  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+  const numberWithCountry = digits.length === 10 || digits.length === 11 ? `55${digits}` : digits;
+  return `https://wa.me/${numberWithCountry}?text=${encodeURIComponent(text)}`;
 }
 
 export function instagramHandle(value: string | null | undefined): string | null {
@@ -59,7 +61,7 @@ export function instagramHandle(value: string | null | undefined): string | null
   return handle || null;
 }
 
-export function sortedPhotos(car: CatalogVehicle): VehiclePhoto[] {
+export function sortedPhotos(car: CatalogVehicle): CatalogPhoto[] {
   return [...car.vehicle_photos]
     .sort((a, b) => Number(b.is_primary) - Number(a.is_primary) || a.position - b.position)
     .slice(0, MAX_PHOTOS);
