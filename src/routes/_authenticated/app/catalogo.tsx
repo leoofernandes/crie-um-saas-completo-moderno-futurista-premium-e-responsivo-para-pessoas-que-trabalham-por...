@@ -60,7 +60,8 @@ function CatalogPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser(); if (!user) throw new Error("Sessão expirada.");
       const values: SiteUpdate = { slug, logo_url: draft.logo_url, banner_url: draft.banner_url, banner_position: draft.banner_position, accent_color: draft.accent_color, is_published: publish ?? draft.is_published };
-      for (const key of TEXT_FIELDS) { if (key !== "slug") values[key] = draft[key]?.trim() || (key === "display_name" ? "Meu catálogo" : null); }
+      values.display_name = draft.display_name.trim();
+      for (const key of TEXT_FIELDS) { if (key !== "slug" && key !== "display_name") values[key] = draft[key]?.trim() || null; }
       const result = site.data ? await supabase.from("public_sites").update(values).eq("id", site.data.id).eq("user_id", user.id).select().single() : await supabase.from("public_sites").insert({ ...values, user_id: user.id, slug }).select().single();
       if (result.error) throw new Error(result.error.code === "23505" ? "Esse link já está em uso. Escolha outro." : result.error.message);
       setDraft(result.data); setDirty(false);
