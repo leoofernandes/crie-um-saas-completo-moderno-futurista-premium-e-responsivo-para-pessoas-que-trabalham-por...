@@ -1,300 +1,104 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Copy, ImagePlus, Loader2, MessageCircle, Share2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Car, ExternalLink, Globe2, MessageCircle, Save, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Field } from "@/components/app/Field";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { resizeImageToBlob } from "@/lib/image";
-import { leadsQuery, siteQuery } from "@/lib/queries";
+import { leadsQuery, siteQuery, vehiclesQuery, type PublicSite } from "@/lib/queries";
+import { formatDate } from "@/lib/format";
+import { CatalogPreview } from "@/components/catalog/CatalogPreview";
+import { CatalogUpload } from "@/components/catalog/CatalogUpload";
+import { ShareCatalog } from "@/components/catalog/ShareCatalog";
+import { DEFAULT_ACCENT, statusInfo, vehicleTitle, whatsappLink, type CatalogVehicle } from "@/components/catalog/catalog-utils";
 
-export const Route = createFileRoute("/_authenticated/app/catalogo")({ component: CatalogPage });
+export const Route = createFileRoute("/_authenticated/app/catalogo")({
+  head: () => ({ meta: [{ title: "Meu catálogo — movvia" }, { name: "description", content: "Personalize e compartilhe seu catálogo de carros e acompanhe interesses recebidos." }, { property: "og:title", content: "Meu catálogo — movvia" }, { property: "og:description", content: "Sua vitrine de carros integrada ao movvia." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }, { name: "robots", content: "noindex" }] }),
+  component: CatalogPage,
+});
+type SiteUpdate = Database["public"]["Tables"]["public_sites"]["Update"];
+type LeadStatus = Database["public"]["Enums"]["lead_status"];
+const LEAD_STATUS: Record<LeadStatus, string> = { novo: "Novo", em_atendimento: "Em atendimento", alugado: "Alugado", sem_interesse: "Sem interesse" };
+const TEXT_FIELDS = ["display_name", "slug", "hero_title", "hero_subtitle", "description", "whatsapp", "instagram", "city", "about_title", "about_description", "business_hours", "footer_text"] as const;
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
+function emptySite(): PublicSite {
+  return { id: "", user_id: "", slug: "", display_name: "Meu catálogo", description: null, hero_title: null, hero_subtitle: null, logo_url: null, banner_url: null, banner_position: 50, whatsapp: null, instagram: null, city: null, about_title: null, about_description: null, business_hours: null, footer_text: null, accent_color: DEFAULT_ACCENT, is_published: false, created_at: "", updated_at: "" };
 }
-
 function CatalogPage() {
-  const site = useQuery(siteQuery);
-  const leads = useQuery(leadsQuery);
+  const site = useQuery(siteQuery), vehicles = useQuery(vehiclesQuery), leads = useQuery(leadsQuery);
   const client = useQueryClient();
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [draft, setDraft] = useState<PublicSite>(emptySite);
+  const [initialized, setInitialized] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [tab, setTab] = useState("overview");
   const [saving, setSaving] = useState(false);
-  const [bannerPosition, setBannerPosition] = useState<number | null>(null);
-
-  const s = site.data as (typeof site.data & { about_title?: string | null; about_description?: string | null; city?: string | null; accent_color?: string | null }) | null;
-  const position = bannerPosition ?? s?.banner_position ?? 50;
-
-  function refresh() {
-    client.invalidateQueries({ queryKey: ["public_site"] });
-  }
-
-  async function upsertSite(values: Database["public"]["Tables"]["public_sites"]["Update"]) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Sessão expirada."); return false; }
-
-    if (s) {
-      const { error } = await supabase.from("public_sites").update(values).eq("id", s.id);
-      if (error) { toast.error(error.code === "23505" ? "Esse link já está em uso, escolha outro." : error.message); return false; }
-    } else {
-      const insertValues: Database["public"]["Tables"]["public_sites"]["Insert"] = {
-        user_id: user.id,
-        is_published: false,
-        slug: values.slug ?? user.id,
-        ...values,
-      };
-      if (!insertValues.display_name) insertValues.display_name = "Meu catálogo";
-      const { error } = await supabase.from("public_sites").insert(insertValues);
-      if (error) { toast.error(error.code === "23505" ? "Esse link já está em uso, escolha outro." : error.message); return false; }
-    }
-    refresh();
-    return true;
-  }
-
-  async function togglePublish() {
-    const ok = await upsertSite({ is_published: !(s?.is_published ?? false) });
-    if (ok) toast.success(s?.is_published ? "Catálogo despublicado." : "Catálogo publicado!");
-  }
-
-  async function submitDetails(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const [busyVehicle, setBusyVehicle] = useState<string | null>(null);
+  const [busyLead, setBusyLead] = useState<string | null>(null);
+  const [leadFilter, setLeadFilter] = useState("todos");
+  const [origin, setOrigin] = useState("");
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+  useEffect(() => { if (!site.isLoading && !initialized) { setDraft(site.data ?? emptySite()); setInitialized(true); } }, [site.data, site.isLoading, initialized]);
+  useEffect(() => { if (!dirty) return; const guard = (event: BeforeUnloadEvent) => { event.preventDefault(); }; window.addEventListener("beforeunload", guard); return () => window.removeEventListener("beforeunload", guard); }, [dirty]);
+  const update = (values: Partial<PublicSite>) => { setDraft(d => ({ ...d, ...values })); setDirty(true); };
+  const rows = [...(vehicles.data ?? [])].sort((a,b) => a.catalog_order - b.catalog_order || a.id.localeCompare(b.id));
+  const visible = rows.filter(v => v.show_in_catalog && v.status !== "inativo");
+  const publicUrl = site.data ? `${origin}/catalogo/${site.data.slug}` : "";
+  async function save(publish?: boolean) {
+    const slug = draft.slug.trim().toLowerCase();
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) || slug.length < 3 || slug.length > 40) { toast.error("O link deve ter de 3 a 40 caracteres: letras minúsculas, números e hífens."); setTab("personalization"); return; }
+    if (!draft.display_name.trim()) { toast.error("Informe o nome exibido."); setTab("personalization"); return; }
+    if (publish === false && !window.confirm("Despublicar o catálogo? O link deixará de estar disponível aos visitantes.")) return;
     setSaving(true);
-    const f = new FormData(event.currentTarget);
-    const rawSlug = String(f.get("slug") ?? "").trim();
-    const normalizedSlug = slugify(rawSlug);
-    const values: Database["public"]["Tables"]["public_sites"]["Update"] = {
-      display_name: String(f.get("display_name") ?? "").trim() || "Meu catálogo",
-      ...(normalizedSlug ? { slug: normalizedSlug } : {}),
-      description: String(f.get("description") ?? "").trim() || null,
-      hero_title: String(f.get("hero_title") ?? "").trim() || null,
-      hero_subtitle: String(f.get("hero_subtitle") ?? "").trim() || null,
-      whatsapp: String(f.get("whatsapp") ?? "").trim() || null,
-      instagram: String(f.get("instagram") ?? "").trim() || null,
-      city: String(f.get("city") ?? "").trim() || null,
-      about_title: String(f.get("about_title") ?? "").trim() || null,
-      about_description: String(f.get("about_description") ?? "").trim() || null,
-      accent_color: String(f.get("accent_color") ?? "").trim() || "#22c55e",
-      banner_position: position,
-    };
-    const ok = await upsertSite(values);
-    setSaving(false);
-    if (ok) toast.success("Catálogo salvo com sucesso.");
-  }
-
-  async function handleLogo(file: File | undefined) {
-    if (!file) return;
-    setUploadingLogo(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Sessão expirada."); setUploadingLogo(false); return; }
     try {
-      const blob = await resizeImageToBlob(file, 512, 0.85);
-      const path = `${user.id}/logo-${crypto.randomUUID()}.jpg`;
-      const { error } = await supabase.storage.from("site-assets").upload(path, blob, { contentType: "image/jpeg" });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("site-assets").getPublicUrl(path);
-      await upsertSite({ logo_url: pub.publicUrl });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Falha ao enviar logo.");
-    }
-    setUploadingLogo(false);
+      const { data: { user } } = await supabase.auth.getUser(); if (!user) throw new Error("Sessão expirada.");
+      const values: SiteUpdate = { slug, logo_url: draft.logo_url, banner_url: draft.banner_url, banner_position: draft.banner_position, accent_color: draft.accent_color, is_published: publish ?? draft.is_published };
+      for (const key of TEXT_FIELDS) { if (key !== "slug") values[key] = draft[key]?.trim() || (key === "display_name" ? "Meu catálogo" : null); }
+      const result = site.data ? await supabase.from("public_sites").update(values).eq("id", site.data.id).eq("user_id", user.id).select().single() : await supabase.from("public_sites").insert({ ...values, user_id: user.id, slug }).select().single();
+      if (result.error) throw new Error(result.error.code === "23505" ? "Esse link já está em uso. Escolha outro." : result.error.message);
+      setDraft(result.data); setDirty(false);
+      await client.invalidateQueries({ queryKey: ["public_site"] }); await client.invalidateQueries({ queryKey: ["catalog"] });
+      toast.success(publish === true ? "Catálogo publicado!" : publish === false ? "Catálogo despublicado." : "Catálogo salvo com sucesso.");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Não foi possível salvar o catálogo."); }
+    finally { setSaving(false); }
   }
-
-  async function handleBanner(file: File | undefined) {
-    if (!file) return;
-    setUploadingBanner(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { toast.error("Sessão expirada."); setUploadingBanner(false); return; }
-    try {
-      const blob = await resizeImageToBlob(file, 1920, 0.85);
-      const path = `${user.id}/banner-${crypto.randomUUID()}.jpg`;
-      const { error } = await supabase.storage.from("site-assets").upload(path, blob, { contentType: "image/jpeg" });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("site-assets").getPublicUrl(path);
-      await upsertSite({ banner_url: pub.publicUrl });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Falha ao enviar banner.");
-    }
-    setUploadingBanner(false);
+  async function toggleVehicle(car: CatalogVehicle, show: boolean) {
+    setBusyVehicle(car.id);
+    try { const { error } = await supabase.from("vehicles").update({ show_in_catalog: show }).eq("id", car.id); if (error) throw error; await client.invalidateQueries({ queryKey: ["vehicles"] }); await client.invalidateQueries({ queryKey: ["catalog"] }); toast.success(show ? "Carro exibido no catálogo." : "Carro ocultado do catálogo."); }
+    catch { toast.error("Não foi possível alterar a exibição."); } finally { setBusyVehicle(null); }
   }
-
-  async function downloadQrCode() {
-    if (!publicUrl) return;
-    try {
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=512x512&data=${encodeURIComponent(publicUrl)}`;
-      const response = await fetch(qrUrl);
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = "catalogo-qrcode.png";
-      link.click();
-      URL.revokeObjectURL(objectUrl);
-    } catch {
-      toast.error("Não foi possível baixar o QR Code.");
-    }
+  async function moveVehicle(index: number, direction: -1 | 1) {
+    const car = rows[index]; if (!car || !rows[index + direction]) return;
+    setBusyVehicle(car.id);
+    const ordered = [...rows]; const other = ordered[index + direction]; if (!other) return; ordered[index] = other; ordered[index + direction] = car;
+    try { const results = await Promise.all(ordered.map((v, position) => supabase.from("vehicles").update({ catalog_order: position }).eq("id", v.id))); if (results.some(r => r.error)) throw new Error(); await client.invalidateQueries({ queryKey: ["vehicles"] }); await client.invalidateQueries({ queryKey: ["catalog"] }); toast.success("Ordem atualizada."); }
+    catch { toast.error("Não foi possível atualizar a ordem. Confira a lista."); await client.invalidateQueries({ queryKey: ["vehicles"] }); } finally { setBusyVehicle(null); }
   }
-
-  if (site.isLoading || leads.isLoading) return <main className="mx-auto max-w-4xl px-4 py-8">Carregando...</main>;
-
-  const publicUrl = s ? `${window.location.origin}/catalogo/${s.slug}` : null;
-  const canShare = Boolean(s?.is_published && publicUrl);
-
-  return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <h1 className="font-display text-3xl font-bold">Catálogo</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Personalize sua vitrine pública e acompanhe quem demonstrou interesse.</p>
-
-      <div className="mt-6 flex items-center justify-between rounded-md border border-border bg-card p-5">
-        <div>
-          <h2 className="font-display text-lg font-semibold">Publicação</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{s?.is_published ? "Seu catálogo está publicado." : "Seu catálogo está oculto."}</p>
-        </div>
-        <Button type="button" variant={s?.is_published ? "outline" : "default"} onClick={togglePublish}>
-          {s?.is_published ? "Despublicar" : "Publicar catálogo"}
-        </Button>
-      </div>
-
-      {canShare && (
-        <div className="mt-5 rounded-md border border-border bg-card p-5">
-          <h2 className="font-display text-lg font-semibold">Compartilhar meu catálogo</h2>
-          <p className="mt-1 break-all text-sm text-brand">{publicUrl}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl!); toast.success("Link copiado!"); }}>
-              <Copy className="size-4" /> Copiar link
-            </Button>
-            <Button asChild type="button" variant="outline" size="sm">
-              <a href={`https://wa.me/?text=${encodeURIComponent(`Confira meus carros disponíveis: ${publicUrl}`)}`} target="_blank" rel="noreferrer">
-                <MessageCircle className="size-4" /> Compartilhar no WhatsApp
-              </a>
-            </Button>
-            {typeof navigator !== "undefined" && "share" in navigator && (
-              <Button type="button" variant="outline" size="sm" onClick={() => navigator.share({ title: s?.display_name ?? "Meu catálogo", url: publicUrl! })}>
-                <Share2 className="size-4" /> Compartilhar
-              </Button>
-            )}
-          </div>
-          <div className="mt-5 inline-block rounded-md border border-border bg-white p-3">
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(publicUrl!)}`} alt="QR Code do catálogo" width={180} height={180} />
-          </div>
-          <div>
-            <Button type="button" variant="outline" size="sm" className="mt-3" onClick={downloadQrCode}>
-              Baixar QR Code
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={submitDetails} className="mt-5 space-y-5 rounded-md border border-border bg-card p-5">
-        <h2 className="font-display text-lg font-semibold">Personalizar meu site</h2>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="mb-2 text-sm font-medium">Logo</p>
-            <div className="flex items-center gap-3">
-              {s?.logo_url ? <img src={s.logo_url} alt="Logo" className="size-14 rounded-full object-cover" /> : <div className="grid size-14 place-items-center rounded-full bg-surface text-xs text-muted-foreground">Logo</div>}
-              <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => handleLogo(e.target.files?.[0])} />
-              <Button type="button" size="sm" variant="outline" disabled={uploadingLogo} onClick={() => logoInputRef.current?.click()}>
-                {uploadingLogo ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} Trocar
-              </Button>
-            </div>
-          </div>
-          <div>
-            <p className="mb-2 text-sm font-medium">Banner (1920×600 recomendado)</p>
-            <div className="flex items-center gap-3">
-              <input ref={bannerInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => handleBanner(e.target.files?.[0])} />
-              <Button type="button" size="sm" variant="outline" disabled={uploadingBanner} onClick={() => bannerInputRef.current?.click()}>
-                {uploadingBanner ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />} {s?.banner_url ? "Trocar banner" : "Adicionar banner"}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {s?.banner_url && (
-          <div>
-            <div className="aspect-[16/5] w-full overflow-hidden rounded-md border border-border bg-surface">
-              <img src={s.banner_url} alt="Banner" className="size-full object-cover" style={{ objectPosition: `center ${position}%` }} />
-            </div>
-            <label className="mt-2 block text-xs text-muted-foreground">
-              Ajustar enquadramento
-              <input type="range" min={0} max={100} value={position} onChange={(e) => setBannerPosition(Number(e.target.value))} className="mt-1 w-full" />
-            </label>
-          </div>
-        )}
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Nome exibido" htmlFor="display_name"><Input id="display_name" name="display_name" defaultValue={s?.display_name ?? ""} required /></Field>
-          <Field label="Link personalizado (slug)" htmlFor="slug">
-            <div className="flex items-center gap-1">
-              <span className="whitespace-nowrap text-sm text-muted-foreground">/catalogo/</span>
-              <Input id="slug" name="slug" defaultValue={s?.slug ?? ""} placeholder="jr-carros" />
-            </div>
-          </Field>
-          <Field label="Título principal" htmlFor="hero_title"><Input id="hero_title" name="hero_title" defaultValue={s?.hero_title ?? ""} placeholder="Encontre seu próximo carro" /></Field>
-          <Field label="Texto secundário" htmlFor="hero_subtitle"><Input id="hero_subtitle" name="hero_subtitle" defaultValue={s?.hero_subtitle ?? ""} placeholder="Confira os veículos disponíveis" /></Field>
-          <Field label="WhatsApp" htmlFor="whatsapp"><Input id="whatsapp" name="whatsapp" defaultValue={s?.whatsapp ?? ""} placeholder="5511999999999" /></Field>
-          <Field label="Instagram" htmlFor="instagram"><Input id="instagram" name="instagram" defaultValue={s?.instagram ?? ""} placeholder="@seuinstagram" /></Field>
-          <Field label="Cidade/região" htmlFor="city"><Input id="city" name="city" defaultValue={s?.city ?? ""} placeholder="São Paulo, SP" /></Field>
-          <Field label="Cor de destaque" htmlFor="accent_color">
-            <div className="flex items-center gap-2">
-              <input type="color" name="accent_color" defaultValue={s?.accent_color || "#22c55e"} className="h-9 w-12 rounded-md border border-input bg-background" />
-            </div>
-          </Field>
-        </div>
-        <Field label="Descrição" htmlFor="description"><Textarea id="description" name="description" defaultValue={s?.description ?? ""} /></Field>
-
-        <div className="grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
-          <Field label="Título da seção Sobre" htmlFor="about_title"><Input id="about_title" name="about_title" defaultValue={s?.about_title ?? ""} placeholder="Aluguel de carros com praticidade" /></Field>
-          <div />
-          <div className="sm:col-span-2">
-            <Field label="Descrição da seção Sobre" htmlFor="about_description"><Textarea id="about_description" name="about_description" defaultValue={s?.about_description ?? ""} placeholder="Conte um pouco sobre o seu negócio..." /></Field>
-          </div>
-        </div>
-
-        <Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
-      </form>
-
-      <section className="mt-8">
-        <h2 className="font-display text-lg font-semibold">Leads recebidos</h2>
-        {leads.isError ? <p className="mt-3 text-destructive">Não foi possível carregar os leads.</p>
-          : !leads.data?.length ? <p className="mt-3 text-sm text-muted-foreground">Nenhum lead recebido.</p>
-          : <div className="mt-3 divide-y divide-border rounded-md border border-border">{leads.data.map((lead) => (
-              <div className="flex flex-wrap items-center justify-between gap-3 p-4" key={lead.id}>
-                <div>
-                  <p className="font-medium">{lead.name}</p>
-                  <p className="text-sm text-muted-foreground">{lead.whatsapp}{lead.message ? ` · ${lead.message}` : ""}</p>
-                </div>
-                <select
-                  defaultValue={lead.status}
-                  onChange={async (e) => {
-                    const status = e.target.value as Database["public"]["Enums"]["lead_status"];
-                    const { error } = await supabase.from("site_leads").update({ status }).eq("id", lead.id);
-                    if (error) { toast.error(error.message); return; }
-                    toast.success("Status atualizado.");
-                    client.invalidateQueries({ queryKey: ["leads"] });
-                  }}
-                  className="rounded-md border border-input bg-background px-2 py-1 text-xs"
-                >
-                  <option value="novo">Novo</option>
-                  <option value="em_atendimento">Em atendimento</option>
-                  <option value="alugado">Alugado</option>
-                  <option value="sem_interesse">Sem interesse</option>
-                </select>
-              </div>
-            ))}</div>}
-      </section>
-    </main>
-  );
+  async function changeLead(id: string, status: LeadStatus) {
+    setBusyLead(id);
+    try { const { error } = await supabase.from("site_leads").update({ status }).eq("id", id); if (error) throw error; await client.invalidateQueries({ queryKey: ["leads"] }); toast.success("Status atualizado."); }
+    catch { toast.error("Não foi possível atualizar o status."); } finally { setBusyLead(null); }
+  }
+  if (site.isLoading || !initialized) return <div className="mx-auto max-w-6xl p-6"><Skeleton className="h-12 w-64"/><Skeleton className="mt-6 h-96 w-full"/></div>;
+  if (site.isError) return <div className="mx-auto max-w-6xl p-6"><p role="alert">Não foi possível carregar seu catálogo.</p><Button className="mt-4" onClick={() => site.refetch()}>Tentar novamente</Button></div>;
+  const filteredLeads = (leads.data ?? []).filter(l => leadFilter === "todos" || l.status === leadFilter);
+  const field = (key: typeof TEXT_FIELDS[number], label: string, multiline = false) => <Field key={key} label={label} htmlFor={`catalog-${key}`}>{multiline ? <Textarea id={`catalog-${key}`} value={draft[key] ?? ""} maxLength={key === "about_description" ? 5000 : 2000} onChange={e => update({ [key]: e.target.value })}/> : <Input id={`catalog-${key}`} value={draft[key] ?? ""} maxLength={key === "slug" ? 40 : 200} onChange={e => update({ [key]: e.target.value })}/>}</Field>;
+  return <div className="mx-auto max-w-6xl px-4 py-7 sm:px-6 lg:py-9">
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-medium uppercase text-brand">Sua vitrine</p><h1 className="mt-2 text-3xl font-semibold">Meu catálogo</h1><p className="mt-2 text-sm text-muted-foreground">{site.data?.is_published ? "Publicado" : "Privado"}{dirty ? " · Alterações não salvas" : ""}</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => save()} disabled={saving}><Save className="size-4"/>{saving ? "Salvando…" : "Salvar alterações"}</Button><Button onClick={() => save(!(site.data?.is_published ?? false))} disabled={saving}>{site.data?.is_published ? "Despublicar" : "Publicar catálogo"}</Button></div></div>
+    <Tabs value={tab} onValueChange={setTab} className="mt-7"><div className="overflow-x-auto pb-2"><TabsList className="h-12 w-max gap-1 bg-transparent p-0">{[{id:"overview",label:"Visão geral"},{id:"personalization",label:"Personalização"},{id:"vehicles",label:"Veículos"},{id:"appearance",label:"Aparência"},{id:"sharing",label:"Compartilhar"},{id:"leads",label:`Leads${leads.data?.length ? ` (${leads.data.length})` : ""}`}].map(t => <TabsTrigger key={t.id} value={t.id} className="h-11 border border-transparent px-4 data-[state=active]:border-border data-[state=active]:bg-surface">{t.label}</TabsTrigger>)}</TabsList></div>
+    <TabsContent value="overview" className="mt-6 space-y-8"><div className="grid gap-4 border-y border-border py-6 sm:grid-cols-3">{[{label:"Carros no catálogo",value:visible.length},{label:"Disponíveis",value:visible.filter(v => v.status === "disponivel").length},{label:"Novos interesses",value:(leads.data ?? []).filter(l => l.status === "novo").length}].map(stat => <div key={stat.label}><p className="text-sm text-muted-foreground">{stat.label}</p><p className="mt-2 text-3xl font-semibold">{stat.value}</p></div>)}</div><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={() => setTab("personalization")}>Editar catálogo</Button><Button variant="outline" onClick={() => setTab("sharing")}><Share2 className="size-4"/>Compartilhar catálogo</Button>{site.data?.is_published && <Button variant="outline" asChild><Link to="/catalogo/$slug" params={{slug:site.data.slug}} target="_blank"><ExternalLink className="size-4"/>Visualizar catálogo</Link></Button>}</div>{!rows.length && !vehicles.isLoading && <div className="border-y border-border py-8"><h2 className="text-xl font-semibold">Seu catálogo está vazio.</h2><p className="mt-2 text-muted-foreground">Cadastre seu primeiro veículo para começar a divulgar sua frota.</p><Button asChild className="mt-4"><Link to="/app/veiculos">Adicionar veículo</Link></Button></div>}<CatalogPreview site={draft} vehicles={rows}/></TabsContent>
+    <TabsContent value="personalization" className="mt-6"><div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><div className="space-y-6"><div className="grid gap-4 sm:grid-cols-2">{field("display_name","Nome exibido")}{field("slug","Link personalizado (slug)")}</div><p className="-mt-3 break-all text-xs text-muted-foreground">/catalogo/{draft.slug || "seu-link"}</p><CatalogUpload label="Logo" value={draft.logo_url} onChange={logo_url => update({logo_url})}/><CatalogUpload label="Banner · 1920 × 600 recomendado" value={draft.banner_url} onChange={banner_url => update({banner_url})} banner/>{draft.banner_url && <div><div className="aspect-[16/5] overflow-hidden rounded-md border border-border"><img src={draft.banner_url} alt="Enquadramento do banner" className="size-full object-cover" style={{objectPosition:`center ${draft.banner_position}%`}}/></div><label className="mt-3 block text-sm">Ajustar enquadramento<input aria-label="Ajustar enquadramento" type="range" min="0" max="100" value={draft.banner_position} onChange={e => update({banner_position:Number(e.target.value)})} className="mt-3 w-full"/></label></div>}{field("hero_title","Título principal")}{field("hero_subtitle","Subtítulo")}{field("description","Descrição",true)}<div className="grid gap-4 sm:grid-cols-2">{field("whatsapp","WhatsApp")}{field("instagram","Instagram")}{field("city","Cidade/região")}{field("business_hours","Horário de atendimento")}</div>{field("about_title","Título da seção Sobre")}{field("about_description","Texto da seção Sobre",true)}{field("footer_text","Texto do rodapé",true)}</div><div className="min-w-0 lg:sticky lg:top-28 lg:self-start"><CatalogPreview site={draft} vehicles={rows}/></div></div></TabsContent>
+    <TabsContent value="vehicles" className="mt-6"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-semibold">Veículos do catálogo</h2><Button variant="outline" asChild><Link to="/app/veiculos"><Car className="size-4"/>Seus carros</Link></Button></div>{vehicles.isLoading ? <Skeleton className="mt-5 h-40 w-full"/> : vehicles.isError ? <p className="mt-5 text-destructive">Não foi possível carregar os carros.<Button variant="ghost" onClick={() => vehicles.refetch()}>Tentar novamente</Button></p> : !rows.length ? <p className="py-10 text-muted-foreground">Seu catálogo está vazio.</p> : <div className="mt-5 divide-y divide-border border-y border-border">{rows.map((car,index) => <div key={car.id} className="flex flex-wrap items-center gap-4 py-4"><div className="size-16 shrink-0 overflow-hidden rounded-md bg-surface">{car.vehicle_photos[0] ? <img src={car.vehicle_photos.find(p => p.is_primary)?.url || car.vehicle_photos[0].url} alt="" className="size-full object-cover" loading="lazy"/> : <Car className="m-5 size-6 text-muted-foreground"/>}</div><div className="min-w-0 flex-1"><Link to="/app/veiculos/$id" params={{id:car.id}} className="font-medium hover:text-brand">{vehicleTitle(car)}</Link><p className="mt-1 text-xs text-muted-foreground">{statusInfo(car.status).label}{car.status === "inativo" ? " · Inativo: não será exibido" : ""}</p></div><div className="flex items-center gap-3"><Button variant="ghost" size="icon" title="Mover para cima" aria-label={`Mover ${car.model} para cima`} disabled={index === 0 || busyVehicle !== null} onClick={() => moveVehicle(index,-1)}><ArrowUp className="size-4"/></Button><Button variant="ghost" size="icon" title="Mover para baixo" aria-label={`Mover ${car.model} para baixo`} disabled={index === rows.length - 1 || busyVehicle !== null} onClick={() => moveVehicle(index,1)}><ArrowDown className="size-4"/></Button><Switch aria-label={`Mostrar ${car.model} no catálogo`} checked={car.show_in_catalog} disabled={busyVehicle !== null} onCheckedChange={show => toggleVehicle(car,show)}/></div></div>)}</div>}</TabsContent>
+    <TabsContent value="appearance" className="mt-6"><div className="grid gap-8 lg:grid-cols-2"><div><h2 className="text-xl font-semibold">Premium Dark</h2><div className="mt-6"><label htmlFor="catalog-accent" className="text-sm font-medium">Cor de destaque</label><div className="mt-3 flex items-center gap-3"><input id="catalog-accent" type="color" value={draft.accent_color} onChange={e => update({accent_color:e.target.value})} className="h-11 w-16 cursor-pointer rounded-md border border-input bg-background"/><span className="text-sm text-muted-foreground">{draft.accent_color}</span></div></div></div><CatalogPreview site={draft} vehicles={rows}/></div></TabsContent>
+    <TabsContent value="sharing" className="mt-6"><ShareCatalog url={publicUrl} name={site.data?.display_name || draft.display_name} published={Boolean(site.data?.is_published)}/></TabsContent>
+    <TabsContent value="leads" className="mt-6"><div className="flex flex-wrap items-center justify-between gap-4"><h2 className="text-xl font-semibold">Leads recebidos</h2><Select value={leadFilter} onValueChange={setLeadFilter}><SelectTrigger className="w-48" aria-label="Filtrar leads"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="todos">Todos</SelectItem>{Object.entries(LEAD_STATUS).map(([value,label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>{leads.isLoading ? <Skeleton className="mt-6 h-40 w-full"/> : leads.isError ? <p className="mt-6 text-destructive">Não foi possível carregar os leads.<Button variant="ghost" onClick={() => leads.refetch()}>Tentar novamente</Button></p> : !filteredLeads.length ? <p className="py-10 text-muted-foreground">{leads.data?.length ? "Nenhum lead com esse status." : "Nenhum lead recebido."}</p> : <div className="mt-6 divide-y divide-border border-y border-border">{filteredLeads.map(lead => { const chat = whatsappLink(lead.whatsapp,`Olá, ${lead.name}! Recebi seu interesse${lead.vehicles ? ` no ${vehicleTitle(lead.vehicles)}` : ""}.`); return <article key={lead.id} className="flex flex-wrap items-start justify-between gap-5 py-5"><div className="min-w-0 flex-1"><h3 className="font-semibold">{lead.name}</h3><p className="mt-1 text-sm text-muted-foreground">{lead.whatsapp} · {formatDate(lead.created_at)}</p><p className="mt-2 text-sm">{lead.vehicles ? vehicleTitle(lead.vehicles) : "Veículo não disponível"}</p>{lead.message && <p className="mt-2 whitespace-pre-line break-words text-sm text-muted-foreground">{lead.message}</p>}</div><div className="flex flex-wrap gap-2"><Select value={lead.status} disabled={busyLead === lead.id} onValueChange={status => changeLead(lead.id,status as LeadStatus)}><SelectTrigger className="w-44" aria-label={`Status de ${lead.name}`}><SelectValue/></SelectTrigger><SelectContent>{Object.entries(LEAD_STATUS).map(([value,label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>{chat && <Button asChild variant="outline"><a href={chat} target="_blank" rel="noreferrer"><MessageCircle className="size-4"/>Conversar no WhatsApp</a></Button>}</div></article>; })}</div>}</TabsContent>
+    </Tabs>
+  </div>;
 }
