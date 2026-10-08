@@ -394,10 +394,13 @@ export type Database = {
           footer_text: string | null
           hero_subtitle: string | null
           hero_title: string | null
+          hide_unavailable: boolean
           id: string
           instagram: string | null
           is_published: boolean
           logo_url: string | null
+          show_color: boolean
+          show_mileage: boolean
           slug: string
           updated_at: string
           user_id: string
@@ -417,10 +420,13 @@ export type Database = {
           footer_text?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
+          hide_unavailable?: boolean
           id?: string
           instagram?: string | null
           is_published?: boolean
           logo_url?: string | null
+          show_color?: boolean
+          show_mileage?: boolean
           slug: string
           updated_at?: string
           user_id: string
@@ -440,10 +446,13 @@ export type Database = {
           footer_text?: string | null
           hero_subtitle?: string | null
           hero_title?: string | null
+          hide_unavailable?: boolean
           id?: string
           instagram?: string | null
           is_published?: boolean
           logo_url?: string | null
+          show_color?: boolean
+          show_mileage?: boolean
           slug?: string
           updated_at?: string
           user_id?: string

@@ -3,6 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Calendar, Car, Fuel, Gauge, MessageCircle, Palette, Settings2, Tag } from "lucide-react";
 import { catalogQuery } from "@/lib/catalog-queries";
+import { getCatalogOrigin } from "@/lib/catalog.functions";
 import { catalogHead } from "@/lib/catalog-head";
 import { CatalogError, CatalogNotFound } from "@/components/catalog/CatalogState";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import {
 export const Route = createFileRoute("/catalogo/$slug/veiculo/$id")({
   loader: async ({ params, context, location }) => {
     const data = await context.queryClient.ensureQueryData(catalogQuery(params.slug));
-    return { ...data, vehicle: data.vehicles.find(car => car.id === params.id) ?? null, origin: new URL(location.href, "https://id-preview--1dec846f-466e-46b4-bef3-01fb22e5e54d.lovable.app").origin };
+    return { ...data, vehicle: data.vehicles.find(car => car.id === params.id) ?? null, origin: await getCatalogOrigin() };
   },
   head: ({ loaderData }) => catalogHead(loaderData?.site, loaderData?.origin || "", loaderData?.vehicle ?? null),
   component: PublicVehiclePage,
@@ -76,9 +77,9 @@ function PublicVehiclePage() {
     { icon: Calendar, label: "Ano", value: car.year ? String(car.year) : null },
     { icon: Fuel, label: "Combustível", value: car.fuel_type },
     { icon: Settings2, label: "Câmbio", value: transmissionLabel(car.transmission) },
-    { icon: Gauge, label: "Quilometragem", value: car.mileage != null ? `${car.mileage.toLocaleString("pt-BR")} km` : null },
+    { icon: Gauge, label: "Quilometragem", value: publicSite.show_mileage && car.mileage != null ? `${car.mileage.toLocaleString("pt-BR")} km` : null },
     { icon: Tag, label: "Categoria", value: car.category },
-    { icon: Palette, label: "Cor", value: car.color },
+    { icon: Palette, label: "Cor", value: publicSite.show_color ? car.color : null },
   ].filter((spec): spec is { icon: typeof Calendar; label: string; value: string } => Boolean(spec.value));
 
   const features = car.features ?? [];

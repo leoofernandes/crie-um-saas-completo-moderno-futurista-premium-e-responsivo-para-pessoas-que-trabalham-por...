@@ -15,3 +15,5 @@
 - Owner preview reuses the public catalog view with unsaved local draft data; drafts never require public-read access or anonymous publication.
 - Catalog visibility/order stay on existing vehicles, not a duplicate fleet/settings table; each account already has one site.
 - Generate sharing QR codes locally with qrcode; this avoids a third-party dependency and exposes no link to an image service.
+
+- Resolve catalog canonical origins from the current server request, never a fixed preview domain; sharing must follow the deployed host.
