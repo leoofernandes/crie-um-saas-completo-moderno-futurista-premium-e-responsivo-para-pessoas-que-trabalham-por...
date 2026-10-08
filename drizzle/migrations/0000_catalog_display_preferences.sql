@@ -1,0 +1,1 @@
+ALTER TABLE public.public_sites ADD COLUMN IF NOT EXISTS hide_unavailable boolean NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS show_mileage boolean NOT NULL DEFAULT true, ADD COLUMN IF NOT EXISTS show_color boolean NOT NULL DEFAULT true;
