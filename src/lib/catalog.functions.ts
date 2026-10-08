@@ -2,6 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { catalogPublicClient, PUBLIC_VEHICLE_COLUMNS } from "./catalog.server";
 
+export const getCatalogOrigin = createServerFn({ method: "GET" }).handler(async () => {
+  const { getRequestUrl } = await import("@tanstack/react-start/server");
+  return getRequestUrl({ xForwardedHost: true, xForwardedProto: true }).origin;
+});
+
 export const getPublicCatalog = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ slug: z.string().min(3).max(40) }).parse(input))
   .handler(async ({ data }) => {
@@ -11,7 +16,8 @@ export const getPublicCatalog = createServerFn({ method: "GET" })
     if (!site) return { site: null, vehicles: [] };
     const result = await client.from("vehicles").select(PUBLIC_VEHICLE_COLUMNS).eq("user_id", site.user_id).eq("show_in_catalog", true).neq("status", "inativo").order("catalog_order").order("id");
     if (result.error) throw new Error("Não foi possível carregar os veículos.");
-    return { site, vehicles: result.data };
+    const vehicles = result.data.filter(car => !site.hide_unavailable || car.status === "disponivel").map(car => ({ ...car, mileage: site.show_mileage ? car.mileage : null, color: site.show_color ? car.color : null }));
+    return { site, vehicles };
   });
 
 export const sendCatalogInterest = createServerFn({ method: "POST" })
